@@ -1,185 +1,131 @@
-package client.screen;
+package client.game;
 import java.util.ArrayList;
 
+import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Screen;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
+import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Texture;
-import com.badlogic.gdx.graphics.g2d.BitmapFont;
-import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
-import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.viewport.FitViewport;
-import com.badlogic.gdx.utils.viewport.Viewport;
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
-public class GameScreen implements Screen {
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
+
+
+public class GameScreen implements ApplicationListener {
     private OrthographicCamera camera;
-    private Viewport viewport;
-    private SpriteBatch batch;
     private ShapeRenderer shapeRenderer;
-    private BitmapFont font;
     
-    private GameApiClient apiClient;
-    private GameStateResponse currentGameState;
-    private float updateTimer = 0f;
-    private static final float UPDATE_INTERVAL = 0.05f; 
-
-    private Texture playerTextureBlue;
-    private Texture backgroundTexture;
-
+    private List<Player> players = new ArrayList<>();
     private String localPlayerId = "player-123";
-    private PlayerData localPlayer;
     
-    public GameScreen(String playerId) {
-        this.localPlayerId = playerId;
-        this.apiClient = new GameApiClient();
-        this.currentGameState = new GameStateResponse();
-        this.currentGameState.setPlayers(new ArrayList<>());
-    }
+    private float updateTimer = 0;
+    private static final float UPDATE_INTERVAL = 0.05f;
+
+    private static final String API_URL = "http://localhost:8080";
+
+    private Gson gson = new Gson();
 
     @Override
-    public void show() {
+    public void create() {
         camera = new OrthographicCamera();
-        viewport = new FitViewport(100, 100, camera);
-        camera.position.set(640, 360, 0);
-        
-        batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
-        
-        playerTextureBlue = new Texture("player_blue.png");
-        backgroundTexture = new Texture("background.png");
-        
-        fetchGameState();
-    }
-    
-    private void fetchGameState() {
-        apiClient.fetchGameState(new GameApiClient.GameStateCallback() {
-            @Override
-            public void onSuccess(GameStateResponse gameState) {
-                currentGameState = gameState;
-                
-                // Znajdź lokalnego gracza
-                for (PlayerData player : currentGameState.getPlayers()) {
-                    if (player.getId().equals(localPlayerId)) {
-                        localPlayer = player;
-                        break;
-                    }
-                }
-            }
-            
-            @Override
-            public void onError(String error) {
-                Gdx.app.log("GameScreen", "Błąd API: " + error);
-            }
-        });
+        camera.setToOrtho(false, 800, 600);
+
+        shapeRenderer = new ShapeRender();
+
+        fetchPlayers();
+        System.out.println("Fetching players from: " + API_URL);
     }
 
     @Override
-    public void render(float delta) {
-        updateTimer += delta;
-        if (updateTimer >= UPDATE_INTERVAL) {
+    public void render() {
+        updateTimer += Gdx.graphics.getDeltaTime();
+        if(updateTimer >= UPDATE_INTERVAL) {
             updateTimer = 0;
-            fetchGameState();
+            fetchPlayers();
         }
 
-        if (localPlayer != null) {
-            camera.position.set(localPlayer.getX(), localPlayer.getY(), 0);
-            camera.update();
+        ScreenUtils.clear(0.1f, 0.1f, 0.15f, 1f);
+
+        camera.update();
+        shapeRenderer.setProjectionMatrix(camera.combined);
+
+        drawGrid();
+
+        shapeRenderer.begin(ShapeRender.ShareType.Filled);
+        for(Player player : players) {
+            drawPlayer(player);
         }
 
-        ScreenUtils.clear(0.15f, 0.15f, 0.2f, 1f);
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-
-        batch.draw(backgroundTexture, camera.position.x - 640, camera.position.y - 360, 100, 100);
-
-        if (currentGameState.getPlayers() != null) {
-            for(PlayerData player : currentGameState.getPlayers()) {
-                renderPlayer(player);
-            }
-        }
-
-        batch.end();
-
-        renderHUD();
+        shapeRenderer.end();
+        drawHUD();
     }
 
-    private void renderPlayer(PlayerData player) {
-        Texture texture = playerTextureBlue;
-        
-        float playerWidth = 48f;
-        float playerHeight = 48f;
-        
-        batch.draw(texture,
-                   player.getX() - playerWidth/2,
-                   player.getY() - playerHeight/2,
-                   playerWidth/2, playerHeight/2,  
-                   playerWidth, playerHeight,
-                   1f, 1f,
-                   player.getRotation());
-        
-        drawHealthBar(player);
+    private void drawPlayer(Player player) {
+        shapeRenderer.setColor(0.2f, 0.2f, 1f, 1f);
+        shapeRenderer.rect(player.x, player.y,20, 20);
 
-        font.draw(batch, 
-                  player.getNickname(),
-                  player.getX() - 30, 
-                  player.getY() + 35);
-    }
+        shapeRenderer.setColor(0.8f, 0.2f, 0.2f, 1f);
+        shapeRenderer.rect(player.x - 20, player.y + 22, 40, 5);
 
-    private void drawHealthBar(PlayerData player) {
-        float barWidth = 50f;
-        float barHeight = 8f;
-        float x = player.getX() - barWidth/2;
-        float y = player.getY() + 25;
-
-        // float healthPercent = player.getHealth() / 100f;
-
-        // shapeRenderer.setProjectionMatrix(camera.combined);
-        // shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        // shapeRenderer.setColor(0.8f, 0.2f, 0.2f, 1f);
-        // shapeRenderer.rect(x, y, barWidth, barHeight);
-        
         // shapeRenderer.setColor(0.2f, 0.8f, 0.2f, 1f);
-        // shapeRenderer.rect(x, y, barWidth * healthPercent, barHeight);
-        // shapeRenderer.end();
+        // float healthPercent = player.health / 100f;
+        // shapeRenderer.rect(player.x + 20, player.y + 22, healthPercent * 40, 5);
     }
 
-    private void renderHUD() {
-        OrthographicCamera uiCamera = new OrthographicCamera();
-        uiCamera.setToOrtho(false, Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        batch.setProjectionMatrix(uiCamera.combined);
-        
-        batch.begin();
-        
-        if (localPlayer != null) {
-            // font.draw(batch, "Twoje zdrowie: " + localPlayer.getHealth(), 20, Gdx.graphics.getHeight() - 20);
-            font.draw(batch, "Pozostali gracze: " + (currentGameState.getPlayers().size() - 1), 20, Gdx.graphics.getHeight() - 50);
+    private void drawGrid() {
+        shapeRenderer.begin(ShapeRenderer.ShareType.Line);
+        shapeRenderer.setColor(0.3f, 0.3f, 0.4f, 1f);
+
+        for(int x = 0; x < 800; x += 50) {
+            shapeRenderer.line(x, 0, x, 600);
         }
-        font.draw(batch, "FPS: " + Gdx.graphics.getFramesPerSecond(), 20, 40);
-        
-        batch.end();
+        for(int y = 0; y < 600; y += 50) {
+            shapeRenderer.line(0, y, 800, y);
+        }
+        shapeRenderer.end();        
     }
 
-    @Override
-    public void resize(int width, int height) {
-        viewport.update(width, height);
+    private void drawHUD() {
+        System.out.println("\r[INFO] Players on map: " + players.size());
+        // for(Player p : players) {
+        //     if(p.id.equals(localPlayerId)) {
+        //         System.out.println(" | YOUR HP: " + p.health);
+        //     }
+        // }
     }
-    
-    @Override
-    public void dispose() {
-        batch.dispose();
-        shapeRenderer.dispose();
-        font.dispose();
-        playerTextureRed.dispose();
-        playerTextureBlue.dispose();
-        backgroundTexture.dispose();
+
+    private void fetchPlayers() {
+        new Thread(() -> {
+            try {
+                String json = httpGet(API_URL);
+                if(json != null && !json.isEmpty()) {
+                    parseAndUpdatePlayers(json);
+                }
+            } catch (Exception e) {
+                System.err.println("Error fetching: " + e.getMessage());
+            }
+        }).start();
     }
-    
-    @Override public void pause() {}
-    @Override public void resume() {}
-    @Override public void hide() {}
+
+    private String httpGet(String urlString) throws Exception {
+        URL url = new URL(urlString);
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setRequestMethod("GET");
+        conn.setConnectTimeout(2000);
+        conn.setReadTimeout(2000);
+
+        
+    }
+
 }

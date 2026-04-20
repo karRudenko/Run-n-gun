@@ -8,6 +8,16 @@ public class PlayerData {
     // private int health;
     // private String team;
 
+    Player(String id, String nickname, float x, float y, float rotation, int health, String team) {
+            this.id = id;
+            this.nickname = nickname;
+            this.x = x;
+            this.y = y;
+            // this.rotation = rotation;
+            // this.health = health;
+            // this.team = team;
+        }
+
     // Gettery i settery
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
