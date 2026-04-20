@@ -1,0 +1,51 @@
+plugins {
+    id 'application'
+    id 'java'
+}
+
+def gdxVersion = '1.12.1'
+def javafxVersion = '17.0.6'
+def kryoVersion = '2.22.0-RC1'
+
+dependencies {
+    implementation project(':shared')
+    
+    implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
+    implementation "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+    
+    implementation "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
+    
+    implementation "org.openjfx:javafx-controls:$javafxVersion"
+    implementation "org.openjfx:javafx-fxml:$javafxVersion"
+    
+    implementation "com.esotericsoftware:kryonet:$kryoVersion"
+    
+    implementation 'org.apache.httpcomponents:httpclient:4.5.14'
+    
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    implementation 'ch.qos.logback:logback-classic:1.4.7'
+}
+
+application {
+    mainClass = 'com.game.client.launcher.GameLauncher'
+}
+
+sourceSets {
+    main {
+        resources {
+            srcDirs = ['src/main/resources']
+        }
+    }
+}
+
+task fatJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    archiveBaseName = 'game-client'
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

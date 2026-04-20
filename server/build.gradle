@@ -1,0 +1,41 @@
+plugins {
+    id 'application'
+    id 'java'
+}
+
+def nettyVersion = '4.1.94.Final'
+def jettyVersion = '9.4.51.v20230217'
+
+dependencies {
+    implementation project(':shared')
+    
+    // Netty (WebSocket + TCP)
+    implementation "io.netty:netty-all:$nettyVersion"
+    
+    // Embedded Jetty dla REST API
+    implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
+    implementation "org.eclipse.jetty:jetty-servlet:$jettyVersion"
+    
+    // JSON
+    implementation 'com.google.code.gson:gson:2.10.1'
+    
+    // Logging
+    implementation 'ch.qos.logback:logback-classic:1.4.7'
+    
+    // BCrypt (hasła)
+    implementation 'org.mindrot:jbcrypt:0.4'
+}
+
+application {
+    mainClass = 'com.game.server.GameServer'
+}
+
+task serverJar(type: Jar) {
+    manifest {
+        attributes 'Main-Class': application.mainClass
+    }
+    archiveBaseName = 'game-server'
+    from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    with jar
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

@@ -1,3 +1,4 @@
+package shared.model;
 public class PlayerData {
     private String id;
     // private String nickname;
