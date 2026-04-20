@@ -3,3 +3,6 @@ gradle/
 build/
 *.bat
 gradlew
+server/.vscode/
+server/.mvn/
+server/target/
