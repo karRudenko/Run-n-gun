@@ -1,4 +1,5 @@
 package client.game;
+import client.model.Player;
 import java.util.ArrayList;
 
 import com.badlogic.gdx.ApplicationListener;
@@ -21,7 +22,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class GameScreen implements ApplicationListener {
     private OrthographicCamera camera;
     private ShapeRenderer shapeRenderer;
@@ -41,7 +41,7 @@ public class GameScreen implements ApplicationListener {
         camera = new OrthographicCamera();
         camera.setToOrtho(false, 800, 600);
 
-        shapeRenderer = new ShapeRender();
+        shapeRenderer = new ShapeRenderer();
 
         fetchPlayers();
         System.out.println("Fetching players from: " + API_URL);
@@ -62,7 +62,7 @@ public class GameScreen implements ApplicationListener {
 
         drawGrid();
 
-        shapeRenderer.begin(ShapeRender.ShareType.Filled);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         for(Player player : players) {
             drawPlayer(player);
         }
@@ -84,7 +84,7 @@ public class GameScreen implements ApplicationListener {
     }
 
     private void drawGrid() {
-        shapeRenderer.begin(ShapeRenderer.ShareType.Line);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(0.3f, 0.3f, 0.4f, 1f);
 
         for(int x = 0; x < 800; x += 50) {
@@ -125,7 +125,64 @@ public class GameScreen implements ApplicationListener {
         conn.setConnectTimeout(2000);
         conn.setReadTimeout(2000);
 
-        
+        BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+        StringBuilder response = new StringBuilder();
+        String line;
+        while((line = reader.readLine()) != null) {
+            response.append(line);
+        }        
+        reader.close();
+        return response.toString();
     }
+
+    private void parseAndUpdatePlayers(String json) {
+        try {
+            JsonObject root = JsonParser.parseString(json).getAsJsonObject();
+            JsonArray playersArray = root.getAsJsonArray("players");
+
+            List<Player> newPlayers = new ArrayList<>();
+
+            for(int i = 0; i < playersArray.size(); i++) {
+                JsonObject p = playersArray.get(i).getAsJsonObject();
+
+                String id = p.get("id").getAsString();
+                String nickname = p.has("nickname") ? p.get("nickname").getAsString() : "Player";
+                float x = p.get("x").getAsFloat();
+                float y = p.get("y").getAsFloat();
+                float rotation = p.has("rotation") ? p.get("rotation").getAsFloat() : 0f;
+                int health = p.has("health") ? p.get("health").getAsInt() : 100;
+                String team = p.has("team") ? p.get("team").getAsString() : "neutral";
+
+                newPlayers.add(new Player(id, nickname, x, y, rotation, health, team));
+            }
+
+            synchronized(players) {
+                players.clear();
+                players.addAll(newPlayers);
+            }
+
+            System.out.println("\n[UPDATE] Received " + playersArray.size() + " players");
+
+        } catch(Exception e) {
+            System.err.println("Parse error: " + e.getMessage());
+        }
+    }
+
+    @Override
+    public void resize(int width, int height) {
+        camera.viewportWidth = width;
+        camera.viewportHeight = height;
+        camera.update();
+    }
+
+    @Override
+    public void dispose() {
+        shapeRenderer.dispose();
+    }
+
+    @Override
+    public void pause() {}
+    @Override
+    public void resume() {}
 
 }

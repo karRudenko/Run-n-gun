@@ -8,7 +8,6 @@ def javafxVersion = '17.0.6'
 def kryoVersion = '2.22.0-RC1'
 
 dependencies {
-    implementation project(':shared')
     
     implementation "com.badlogicgames.gdx:gdx:$gdxVersion"
     implementation "com.badlogicgames.gdx:gdx-backend-lwjgl3:$gdxVersion"
@@ -29,13 +28,16 @@ dependencies {
 }
 
 application {
-    mainClass = 'com.game.client.launcher.GameLauncher'
+    mainClass = 'client.game.GameMain'
 }
 
 sourceSets {
     main {
+        java {
+            srcDirs = ['game', 'model']
+        }
         resources {
-            srcDirs = ['src/main/resources']
+            srcDirs = ['resources']
         }
     }
 }

@@ -5,9 +5,10 @@ plugins {
 
 def nettyVersion = '4.1.94.Final'
 def jettyVersion = '9.4.51.v20230217'
+def springBootVersion = '3.1.0'
+def javafxVersion = '17.0.6'
 
 dependencies {
-    implementation project(':shared')
     
     // Netty (WebSocket + TCP)
     implementation "io.netty:netty-all:$nettyVersion"
@@ -15,6 +16,14 @@ dependencies {
     // Embedded Jetty dla REST API
     implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-servlet:$jettyVersion"
+    
+    // Spring Boot
+    implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
+    
+    // JavaFX
+    implementation "org.openjfx:javafx-controls:$javafxVersion"
+    implementation "org.openjfx:javafx-graphics:$javafxVersion"
+    implementation "org.openjfx:javafx-base:$javafxVersion"
     
     // JSON
     implementation 'com.google.code.gson:gson:2.10.1'
@@ -24,10 +33,16 @@ dependencies {
     
     // BCrypt (hasła)
     implementation 'org.mindrot:jbcrypt:0.4'
+
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
+    testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
+    testImplementation "org.openjfx:javafx-controls:$javafxVersion"
+    testImplementation "org.openjfx:javafx-graphics:$javafxVersion"
+    testImplementation "org.openjfx:javafx-base:$javafxVersion"
 }
 
 application {
-    mainClass = 'com.game.server.GameServer'
+    mainClass = 'com.game.server.src.main.java.com.vitua.game.main'
 }
 
 task serverJar(type: Jar) {
@@ -38,4 +53,9 @@ task serverJar(type: Jar) {
     from { configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
     with jar
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+test {
+    useJUnitPlatform()
+    jvmArgs '--add-modules', 'javafx.controls,javafx.graphics,javafx.base'
 }

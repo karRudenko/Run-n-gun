@@ -1,10 +1,8 @@
 rootProject.name = 'MultiplayerShooter'
 
-include 'shared'
 include 'server'
 include 'client'
 
 // Opcjonalne: zmiana nazw modułów
-project(':shared').projectDir = file('shared')
 project(':server').projectDir = file('server')
 project(':client').projectDir = file('client')
