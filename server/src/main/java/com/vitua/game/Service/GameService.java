@@ -5,18 +5,16 @@ import java.util.ArrayList;
 
 import java.util.List;
 import com.vitua.game.DTO.GameResponceDTO;
+import com.vitua.game.DAO.MapDAO;
 @Service
 public class GameService {
-    
-    public GameResponceDTO test(){
-        return new GameResponceDTO(1,3);
+    private final MapDAO mapDAO;
+    GameService(MapDAO mapDAO){
+        this.mapDAO=mapDAO;
     }
-    public List<GameResponceDTO> testAll(){
-        ArrayList<GameResponceDTO> list = new ArrayList<>();
-        for(int i =0; i<10 ; i++){
-            list.add(new GameResponceDTO(i,i));
-        }
-        return list;
+    public GameResponceDTO getAllPlayers(int id){
+        return mapDAO.getAllPlayers(id);
     }
+
 
 }

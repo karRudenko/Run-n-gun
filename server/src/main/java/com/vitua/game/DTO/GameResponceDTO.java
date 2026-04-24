@@ -1,8 +1,9 @@
 package com.vitua.game.DTO;
-
+import java.util.List;
 public record GameResponceDTO(
-    double x,
-    double y
+
+    MyPlayerData myPlayer,
+    List<PlayerData> players
 
 
 

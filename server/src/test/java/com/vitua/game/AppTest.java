@@ -7,7 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
+import com.vitua.game.Engine.Collider;
+import com.vitua.game.Engine.GameMap;
 import com.vitua.game.Engine.GameObject;
+import com.vitua.game.Engine.Player;
 import com.vitua.game.math.Vector2D;
 
 import javafx.scene.shape.Circle;
@@ -39,8 +42,9 @@ public class AppTest {
            () -> assertEquals(rotated.dotProduct(v),0.0,0.0001)
         );
     }
+    @Test
     public void gameObjectTest() {
-        GameObject test = new GameObject();
+        GameObject test = new GameObject(new Vector2D(0,0), new Collider(Collider.getRecCollider(0.2,1)));
         test.setPos(new Vector2D(0,0));
         
         assertEquals(test.forward().getM_x(),1,0.0001);
@@ -48,28 +52,51 @@ public class AppTest {
         assertEquals(test.forward().getM_y(), 1,0.0001);
         
     }
-    @Test
-    public void testCirclesOverlap() {
-        // Создаем два круга, которые пересекаются
-        Circle circle1 = new Circle(0, 0, 10);
-        Circle circle2 = new Circle(5, 5, 10);
 
-        // Стандартный метод JavaFX для проверки пересечения Node
-        Shape intersect = Shape.intersect(circle1, circle2);
+@Test
+    public void gameObjectRotationTest() {
+        double w = 0.2;
+        double h = 1.0;
+        GameObject test = new GameObject(new Vector2D(0,0), new Collider(Collider.getRecCollider(w, h)));
         
-        // Если область пересечения не пуста — они столкнулись
-        assertTrue(intersect.getBoundsInLocal().getWidth() > 0, "Круги должны пересекаться");
-    }
+        assertEquals(1.0, test.forward().getM_x(), 0.0001);
+        
+        double angle = 30;
+        test.setRotation(angle);
+        
+        assertEquals(Math.cos(Math.toRadians(angle)), test.forward().getM_x(), 0.0001);
+        assertEquals(Math.sin(Math.toRadians(angle)), test.forward().getM_y(), 0.0001);
 
+        Collider c = test.getCollider();
+        var points = c.getCollider(); 
+
+        double rad = Math.toRadians(angle);
+        double cosA = Math.cos(rad);
+        double sinA = Math.sin(rad);
+
+        double[] originalPoints = {
+            -w/2, -h/2,
+             w/2, -h/2,
+             w/2,  h/2,
+            -w/2,  h/2
+        };
+
+        for (int i = 0; i < originalPoints.length; i += 2) {
+            double oldX = originalPoints[i];
+            double oldY = originalPoints[i+1];
+
+            double expectedX = oldX * cosA - oldY * sinA;
+            double expectedY = oldX * sinA + oldY * cosA;
+
+            assertEquals(expectedX, points.get(i), 0.0001, "Point " + (i/2) + " X mismatch");
+            assertEquals(expectedY, points.get(i+1), 0.0001, "Point " + (i/2) + " Y mismatch");
+        }
+    }
     @Test
-    public void testCirclesDoNotOverlap() {
-        // Создаем два круга далеко друг от друга
-        Circle circle1 = new Circle(0, 0, 5);
-        Circle circle2 = new Circle(50, 50, 5);
-
-        Shape intersect = Shape.intersect(circle1, circle2);
-
-        // Проверяем, что ширина области пересечения отрицательна или 0
-        assertFalse(intersect.getBoundsInLocal().getWidth() > 0, "Круги не должны пересекаться");
+    public void mapTest(){
+        GameMap m = new GameMap();
+        m.addPlayer("biba");
+        assertFalse(m.addPlayer("biba"));
     }
+
 }

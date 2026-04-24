@@ -22,20 +22,12 @@ public class Controler {
     public Controler(GameService service) {
         this.service = service;
     }
+    @GetMapping("/all")
+    public GameResponceDTO getAllPlayers(){
+        return service.getAllPlayers(0);
+        
+    }
 
-    @GetMapping("/")
-    public GameResponceDTO test() {
-        return service.test();
-    }
-     @GetMapping("/all")
-    public List<GameResponceDTO> testAll() {
-        return service.testAll();
-    }
-    @PostMapping("/")
-    public GameResponceDTO testPost(@RequestBody GameResponceDTO data) {
-        System.err.println(data.x());
-        System.err.println(data.y());
-        return service.test();
-    }
+
 
 }
