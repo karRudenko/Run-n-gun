@@ -3,9 +3,12 @@ package com.vitua.game.Engine;
 import com.vitua.game.math.Vector2D;
 
 public class GameObject {
-    public GameObject(Vector2D pos, Collider collider){
-        this.pos=pos;
-        this.collider=collider;
+    public GameObject(Vector2D pos, Collision collision){
+        this.collision=collision;
+        setPos(pos);
+    }
+    public GameObject(Collision collision){
+        this.collision=collision;
     }
     public void setId(int id) {
         this.id = id;
@@ -15,20 +18,21 @@ public class GameObject {
     }
     public void setPos(Vector2D pos) {
         this.pos = pos.copy();
+        collision.setPos(pos);
     }
     public void setRotation(double rotation) {
         this.rotation = rotation;
-        collider.setRotations(rotation);
+        collision.setRotations(rotation);
     }
     public double getSize() {
         return size;
     }
     public void translate(Vector2D oth){
-        pos.addVector(oth);
+        setPos(Vector2D.addVectors(oth, pos));
     }
     public void rotate(double degree){
         rotation+=degree;
-        collider.setRotations(rotation);
+        collision.setRotations(rotation);
     }
     public Vector2D forward(){
         Vector2D res =new Vector2D(1,0);
@@ -41,16 +45,35 @@ public class GameObject {
     public void setName(String name) {
         this.name = name;
     }
-    public Collider getCollider() {
-        return collider;
+    public Collision getCollision() {
+        return collision;
     }
     public Vector2D getPos() {
         return pos;
     }
+    public void update(long nanoDeltaTime){
+        if(!active) return;
+        double deltaTimeSec=nanoDeltaTime/1e9;
+        translate(Vector2D.vecScal(vel, deltaTimeSec));
+    }
+    public void setVelocity(Vector2D newVel){
+        vel=newVel.copy();
+    }
+    public Vector2D getVelocity(){
+        return vel;
+    }
+    public void enable(){
+        active=true;
+    }
+    public void disable(){
+        active=false;
+    }
     protected String name; 
-    protected Vector2D pos;
+    protected Vector2D pos = new Vector2D(0, 0);
+    protected Vector2D vel = new Vector2D(0, 0);
     protected double rotation=0;
-    protected Collider collider;
+    protected Collision collision;
     protected double size;
     protected int id=0;
+    protected boolean active =false;
 }

@@ -3,22 +3,37 @@ package com.vitua.game.Engine;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Stack;
-
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import javafx.util.Pair;
 import org.springframework.stereotype.Component;
 
 import com.vitua.game.math.Vector2D;
+
 @Component
 public class GameMap {
     Map<String, Integer> nameId;
     Map<Integer, GameObject> idObject;
+    Map<Integer, Vector2D> posMemo;
     Stack<Integer> ids; 
+    List<Vector2D> spawnPoints;
+    CollisionManager collisionManager;
+    long lastUpdate=System.nanoTime();
     public GameMap(){
         nameId= new HashMap<>();
         idObject = new HashMap<>();
         ids=new Stack<>();
-        ids.add(0);
+        posMemo= new HashMap<>();
+        collisionManager= new CollisionManager(); 
+        ids.add(0); 
+        spawnPoints = new ArrayList<>();
+        spawnPoints=getBaseSpawnPoints();
+
     }
-    private int getId(){
+    
+    protected int getId(){
         int id = ids.peek();
         ids.pop();
         if(ids.isEmpty()) ids.push(id+1);
@@ -27,11 +42,36 @@ public class GameMap {
     public boolean addPlayer(String nickName){
         if(nameId.containsKey(nickName)) return false;
         int id =getId();
-        Player player = new Player(new Vector2D(id*2, id*2), new Collider(Collider.getRecCollider(0.2,1)));
+        Player player = new Player(new Collision(Collision.getRecCollision(0.2,1)));
         player.setId(id);
         player.setName(nickName);
         nameId.put(nickName, id);
         idObject.put(id, player);
+        return spawnPlayer(player);
+    }
+    protected boolean spawnPlayer(Player player){
+        Vector2D pos = null;
+        Collision areaOfSpawn = new Collision(Collision.getRecCollision(2, 2));
+        Collection<GameObject> objects=idObject.values();
+        for(Vector2D v : spawnPoints){
+            pos=v;
+            areaOfSpawn.setPos(pos);
+            for(GameObject o : objects){
+                if(collisionManager.checkCollisionOfObjects(areaOfSpawn,o)){
+                    pos=null;
+                    break;
+                }
+
+            }
+            if(pos!=null){
+                break;
+            }
+        }
+        if(pos == null){ 
+            
+            return false;}
+        player.setPos(pos.copy());
+        player.enable();
         return true;
     }
     public Map<Integer, GameObject> getIdObject() {
@@ -40,4 +80,26 @@ public class GameMap {
     public Map<String, Integer> getNameId() {
         return nameId;
     }
+    protected void writeMemo(){
+        posMemo.clear();
+        for(Map.Entry<Integer, GameObject> entry : idObject.entrySet()){
+            posMemo.put(entry.getKey(), entry.getValue().getPos().copy());
+        }
+    }
+    public void update(){
+        long t = System.nanoTime();
+        for(GameObject o : idObject.values()){
+            o.update(t-lastUpdate);
+        }
+        lastUpdate=System.nanoTime();
+        List<Pair<GameObject,GameObject>> collisions = collisionManager.getCollisions(idObject.values());
+
+        writeMemo();
+    }
+    protected List<Vector2D> getBaseSpawnPoints(){
+        List<Vector2D> res = new ArrayList<>(Arrays.asList(new Vector2D(10, 10), new Vector2D(20, 25), new Vector2D(20, 30)));
+        return res;
+    }
+
+
 }

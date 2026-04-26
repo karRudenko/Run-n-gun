@@ -32,7 +32,7 @@ public class GameScreen implements ApplicationListener {
     private float updateTimer = 0;
     private static final float UPDATE_INTERVAL = 0.05f;
 
-    private static final String API_URL = "http://localhost:8080";
+    private static final String API_URL = "http://localhost:8080/game/all";
 
     private Gson gson = new Gson();
 
@@ -145,7 +145,7 @@ public class GameScreen implements ApplicationListener {
             for(int i = 0; i < playersArray.size(); i++) {
                 JsonObject p = playersArray.get(i).getAsJsonObject();
 
-                String id = p.get("id").getAsString();
+                //String id = p.get("id").getAsString();
                 String nickname = p.has("nickname") ? p.get("nickname").getAsString() : "Player";
                 float x = p.get("x").getAsFloat();
                 float y = p.get("y").getAsFloat();
@@ -153,7 +153,7 @@ public class GameScreen implements ApplicationListener {
                 int health = p.has("health") ? p.get("health").getAsInt() : 100;
                 String team = p.has("team") ? p.get("team").getAsString() : "neutral";
 
-                newPlayers.add(new Player(id, nickname, x, y, rotation, health, team));
+                newPlayers.add(new Player("das", nickname, x, y, rotation, health, team));
             }
 
             synchronized(players) {

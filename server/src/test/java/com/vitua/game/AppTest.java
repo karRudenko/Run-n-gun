@@ -7,18 +7,23 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import com.vitua.game.Engine.Collider;
+import com.vitua.game.Engine.Collision;
+import com.vitua.game.Engine.CollisionManager;
 import com.vitua.game.Engine.GameMap;
 import com.vitua.game.Engine.GameObject;
 import com.vitua.game.Engine.Player;
 import com.vitua.game.math.Vector2D;
 
+
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Shape;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 /**
  * Unit test for simple App.
  */
+
 public class AppTest {
 
     /**
@@ -44,7 +49,7 @@ public class AppTest {
     }
     @Test
     public void gameObjectTest() {
-        GameObject test = new GameObject(new Vector2D(0,0), new Collider(Collider.getRecCollider(0.2,1)));
+        GameObject test = new GameObject(new Vector2D(0,0), new Collision(Collision.getRecCollision(0.2,1)));
         test.setPos(new Vector2D(0,0));
         
         assertEquals(test.forward().getM_x(),1,0.0001);
@@ -57,7 +62,7 @@ public class AppTest {
     public void gameObjectRotationTest() {
         double w = 0.2;
         double h = 1.0;
-        GameObject test = new GameObject(new Vector2D(0,0), new Collider(Collider.getRecCollider(w, h)));
+        GameObject test = new GameObject(new Vector2D(0,0), new Collision(Collision.getRecCollision(w, h)));
         
         assertEquals(1.0, test.forward().getM_x(), 0.0001);
         
@@ -67,8 +72,8 @@ public class AppTest {
         assertEquals(Math.cos(Math.toRadians(angle)), test.forward().getM_x(), 0.0001);
         assertEquals(Math.sin(Math.toRadians(angle)), test.forward().getM_y(), 0.0001);
 
-        Collider c = test.getCollider();
-        var points = c.getCollider(); 
+        Collision c = test.getCollision();
+        var points = c.getCollision(); 
 
         double rad = Math.toRadians(angle);
         double cosA = Math.cos(rad);
@@ -97,6 +102,37 @@ public class AppTest {
         GameMap m = new GameMap();
         m.addPlayer("biba");
         assertFalse(m.addPlayer("biba"));
+    }
+
+    
+    @Test
+    public void collisionTest() {
+        
+        
+        Player a = new Player(new Vector2D(0, 0), new Collision(Collision.getRecCollision(2, 2)));
+        Player b = new Player(new Vector2D(0.5, 0.5), new Collision(Collision.getRecCollision(2, 2)));
+        Player c = new Player(new Vector2D(10, 0), new Collision(Collision.getRecCollision(2, 1000)));
+        
+        CollisionManager colMan = new CollisionManager();
+        
+
+        assertTrue(colMan.checkCollisionOfObjects(a, b));
+        assertFalse(colMan.checkCollisionOfObjects(a, c));
+        
+        c.setRotation(90);
+        System.out.println();
+        assertTrue(colMan.checkCollisionOfObjects(a, c));
+        
+
+        List<GameObject> l = new ArrayList<>(Arrays.asList(a, b, c));
+        
+
+        assertEquals(3, colMan.getCollisions(l).size());
+        
+        c.setRotation(0);
+        assertFalse(colMan.checkCollisionOfObjects(a, c));
+        
+        assertEquals(1, colMan.getCollisions(l).size());
     }
 
 }
