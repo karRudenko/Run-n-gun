@@ -39,6 +39,22 @@ public class GameObject {
         res.rotate(rotation);
         return res;
     }
+    public Vector2D left(){
+        Vector2D res =new Vector2D(1,0);
+        res.rotate(rotation+90.0);
+        return res;
+    }
+    public Vector2D right(){
+        Vector2D res =new Vector2D(1,0);
+        res.rotate(rotation-90.0);
+        return res;
+    }
+    public Vector2D back(){
+        Vector2D res =new Vector2D(1,0);
+        res.rotate(rotation-180);
+        return res;
+    }
+
     public String getName() {
         return name;
     }
@@ -67,6 +83,9 @@ public class GameObject {
     }
     public void disable(){
         active=false;
+    }
+    public boolean isActive() {
+        return active;
     }
     protected String name; 
     protected Vector2D pos = new Vector2D(0, 0);

@@ -1,7 +1,9 @@
 package com.vitua.game.Engine;
 
 import java.util.Map;
+import java.util.Queue;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Stack;
 import java.util.List;
 import java.util.ArrayList;
@@ -21,6 +23,7 @@ public class GameMap {
     List<Vector2D> spawnPoints;
     CollisionManager collisionManager;
     long lastUpdate=System.nanoTime();
+    Queue<Player> spawnQueue = new LinkedList<>();
     public GameMap(){
         nameId= new HashMap<>();
         idObject = new HashMap<>();
@@ -40,6 +43,7 @@ public class GameMap {
         return id;
     }
     public boolean addPlayer(String nickName){
+        
         if(nameId.containsKey(nickName)) return false;
         int id =getId();
         Player player = new Player(new Collision(Collision.getRecCollision(0.2,1)));
@@ -47,7 +51,8 @@ public class GameMap {
         player.setName(nickName);
         nameId.put(nickName, id);
         idObject.put(id, player);
-        return spawnPlayer(player);
+        spawnQueue.add(player);
+        return true;
     }
     protected boolean spawnPlayer(Player player){
         Vector2D pos = null;
@@ -68,7 +73,7 @@ public class GameMap {
             }
         }
         if(pos == null){ 
-            
+            spawnQueue.add(player);
             return false;}
         player.setPos(pos.copy());
         player.enable();
@@ -87,6 +92,9 @@ public class GameMap {
         }
     }
     public void update(){
+        if(!spawnQueue.isEmpty()){
+            spawnPlayer(spawnQueue.poll());
+        }
         long t = System.nanoTime();
         for(GameObject o : idObject.values()){
             o.update(t-lastUpdate);
@@ -100,6 +108,8 @@ public class GameMap {
         List<Vector2D> res = new ArrayList<>(Arrays.asList(new Vector2D(10, 10), new Vector2D(20, 25), new Vector2D(20, 30)));
         return res;
     }
-
+    public Player getPlayer(String nickName){
+        return (Player)  idObject.get(nameId.get(nickName));
+    }
 
 }

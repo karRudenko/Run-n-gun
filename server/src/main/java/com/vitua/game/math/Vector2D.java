@@ -46,8 +46,14 @@ public class Vector2D{
     public static Vector2D addVectors(Vector2D a, Vector2D b){
         return new Vector2D(a.m_x+b.m_x, a.m_y+b.m_y);
     }
-    public static Vector2D vecScal(Vector2D a, double b){
-        return new Vector2D(a.m_x*b, a.m_x*b);
+    public static Vector2D negativeVector2d(Vector2D a){
+        return new Vector2D(-a.m_x, -a.m_y);
     }
+    public static Vector2D vecScal(Vector2D a, double b){
+        return new Vector2D(a.m_x*b, a.m_y*b);
+    }
+    public static Vector2D normalaze(Vector2D a){
+        return new Vector2D(a.m_x/a.length(), a.m_y/a.length());
+    }    
 
 }

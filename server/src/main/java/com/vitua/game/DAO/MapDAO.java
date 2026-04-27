@@ -14,6 +14,8 @@ import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
 import com.vitua.game.Engine.GameMap;
 import com.vitua.game.Engine.GameObject;
+import com.vitua.game.Engine.InputRecord;
+import com.vitua.game.Engine.Player;
 import com.vitua.game.Engine.GameMap;
 
 @Component
@@ -22,10 +24,6 @@ public class MapDAO {
     private boolean running = true;
     public MapDAO(GameMap map) {
         this.map = map;
-        map.addPlayer("dasda");
-        map.addPlayer("das32a");
-        map.addPlayer("dasdaaaa");
-        map.addPlayer("dasdadsdasddadda");
         
     }
 
@@ -33,17 +31,17 @@ public class MapDAO {
     @Async
     public CompletableFuture<String> startGame() {
         while (running && !Thread.currentThread().isInterrupted()) {
-            map.update();
             try {
                 Thread.sleep(16); 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return CompletableFuture.failedFuture(e);
             }
+            map.update();
         }
         return CompletableFuture.completedFuture("game finished");
     }
-    public GameResponceDTO getAllPlayers(int mySessionId) {
+    public GameResponceDTO getAllPlayers(String name) {
         var nameId = map.getNameId(); 
         var idObject = map.getIdObject(); 
         
@@ -52,11 +50,11 @@ public class MapDAO {
 
         for (Integer id : nameId.values()) {
             GameObject obj = idObject.get(id);
-            if (obj == null) continue;
+            String myName=obj.getName();
+            
+            if(!obj.isActive()) continue;
 
-
-
-            if (id == mySessionId) {
+            if (myName.equals(name)) {
                 myPlayerData = new MyPlayerData(
                     obj.getName(),
                     obj.getPos().getM_x(),
@@ -76,6 +74,13 @@ public class MapDAO {
         }
 
         return new GameResponceDTO(myPlayerData, playerList);
+    }
+    public void injectInput(String nickname, InputRecord data){
+        Player  p = map.getPlayer(nickname);
+        if(p != null) p.injectInput(data);
+    }
+    public boolean addPlayer(String name){
+        return map.addPlayer(name);
     }
         
 }
