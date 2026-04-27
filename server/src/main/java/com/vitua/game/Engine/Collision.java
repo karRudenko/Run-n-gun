@@ -11,9 +11,18 @@ public class Collision {
     private Polygon collision;
     private double rot=0;   
     private Vector2D pos=new Vector2D(0, 0);
+    private boolean impenetrable=false;
     public Collision(Polygon oryg){
         this.collisionOryg=oryg;
         updateGlobalCords();
+    }
+    public Collision(Polygon oryg, boolean impenetrable){
+        this.collisionOryg=oryg;
+        this.impenetrable=impenetrable;
+        updateGlobalCords();
+    }
+    public boolean isImpenetrable() {
+        return impenetrable;
     }
     public List<Double> getCollision(){
         return collision.getPoints();

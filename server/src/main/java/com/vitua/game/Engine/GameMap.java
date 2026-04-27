@@ -100,8 +100,7 @@ public class GameMap {
             o.update(t-lastUpdate);
         }
         lastUpdate=System.nanoTime();
-        List<Pair<GameObject,GameObject>> collisions = collisionManager.getCollisions(idObject.values());
-
+        collisionManager.resolveColisions(idObject.values());
         writeMemo();
     }
     protected List<Vector2D> getBaseSpawnPoints(){

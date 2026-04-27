@@ -125,14 +125,15 @@ public class AppTest {
         
 
         List<GameObject> l = new ArrayList<>(Arrays.asList(a, b, c));
-        
+        colMan.resolveColisions(l);
 
-        assertEquals(3, colMan.getCollisions(l).size());
+        assertEquals(3, colMan.getSoftCollSize());
         
         c.setRotation(0);
+        colMan.resolveColisions(l);
         assertFalse(colMan.checkCollisionOfObjects(a, c));
         
-        assertEquals(1, colMan.getCollisions(l).size());
+        assertEquals(1, colMan.getSoftCollSize());
     }
 
 }

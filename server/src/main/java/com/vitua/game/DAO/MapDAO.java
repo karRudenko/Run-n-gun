@@ -53,24 +53,24 @@ public class MapDAO {
             String myName=obj.getName();
             
             if(!obj.isActive()) continue;
-
-            if (myName.equals(name)) {
-                myPlayerData = new MyPlayerData(
-                    obj.getName(),
-                    obj.getPos().getM_x(),
-                    obj.getPos().getM_y(),
-                    obj.getCollision().getCollision()
-                );
-            } else {
-                PlayerData data = new PlayerData(
-                    obj.getName(),
-                    obj.getPos().getM_x(),
-                    obj.getPos().getM_y(),
-                    obj.getCollision().getCollision()
-                );
-                playerList.add(data);
+                if(obj instanceof Player){
+                if (myName.equals(name)) {
+                    myPlayerData = new MyPlayerData(
+                        obj.getName(),
+                        obj.getPos().getM_x(),
+                        obj.getPos().getM_y(),
+                        obj.getCollision().getCollision()
+                    );
+                } else {
+                    PlayerData data = new PlayerData(
+                        obj.getName(),
+                        obj.getPos().getM_x(),
+                        obj.getPos().getM_y(),
+                        obj.getCollision().getCollision()
+                    );
+                    playerList.add(data);
+                }
             }
-
         }
 
         return new GameResponceDTO(myPlayerData, playerList);

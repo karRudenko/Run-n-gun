@@ -38,7 +38,7 @@ public class Controler {
     }
     @PostMapping("/register")
     public boolean register(@RequestBody RegisterForm form){
-        System.out.println(form.name());
+
         return service.register(form.name());
         
     }
