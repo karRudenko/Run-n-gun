@@ -8,41 +8,35 @@ def jettyVersion = '9.4.51.v20230217'
 def springBootVersion = '3.1.0'
 def javafxVersion = '17.0.6'
 
+configurations.all {
+    resolutionStrategy {
+        force "org.openjfx:javafx-base:$javafxVersion"
+        force "org.openjfx:javafx-graphics:$javafxVersion"
+        force "org.openjfx:javafx-controls:$javafxVersion"
+    }
+}
+
 dependencies {
-    
-    // Netty (WebSocket + TCP)
     implementation "io.netty:netty-all:$nettyVersion"
-    
-    // Embedded Jetty dla REST API
     implementation "org.eclipse.jetty:jetty-server:$jettyVersion"
     implementation "org.eclipse.jetty:jetty-servlet:$jettyVersion"
-    
-    // Spring Boot
     implementation "org.springframework.boot:spring-boot-starter-web:$springBootVersion"
-    
-    // JavaFX
-    implementation "org.openjfx:javafx-controls:$javafxVersion"
-    implementation "org.openjfx:javafx-graphics:$javafxVersion"
-    implementation "org.openjfx:javafx-base:$javafxVersion"
-    
-    // JSON
+    implementation "org.openjfx:javafx-controls:$javafxVersion:win"
+    implementation "org.openjfx:javafx-graphics:$javafxVersion:win"
+    implementation "org.openjfx:javafx-base:$javafxVersion:win"
     implementation 'com.google.code.gson:gson:2.10.1'
-    
-    // Logging
     implementation 'ch.qos.logback:logback-classic:1.4.7'
-    
-    // BCrypt (hasła)
     implementation 'org.mindrot:jbcrypt:0.4'
 
     testImplementation 'org.junit.jupiter:junit-jupiter:5.9.3'
     testImplementation "org.springframework.boot:spring-boot-starter-test:$springBootVersion"
-    testImplementation "org.openjfx:javafx-controls:$javafxVersion"
-    testImplementation "org.openjfx:javafx-graphics:$javafxVersion"
-    testImplementation "org.openjfx:javafx-base:$javafxVersion"
+    testImplementation "org.openjfx:javafx-controls:$javafxVersion:win"
+    testImplementation "org.openjfx:javafx-graphics:$javafxVersion:win"
+    testImplementation "org.openjfx:javafx-base:$javafxVersion:win"
 }
 
 application {
-    mainClass = 'com.game.server.src.main.java.com.vitua.game.main'
+    mainClass = 'com.vitua.game.GameApplication'
 }
 
 task serverJar(type: Jar) {
@@ -57,5 +51,8 @@ task serverJar(type: Jar) {
 
 test {
     useJUnitPlatform()
-    jvmArgs '--add-modules', 'javafx.controls,javafx.graphics,javafx.base'
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['--release', '17']
 }

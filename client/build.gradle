@@ -28,16 +28,16 @@ dependencies {
 }
 
 application {
-    mainClass = 'client.game.GameMain'
+    mainClass = 'com.shootergame.client.Launcher'
 }
 
 sourceSets {
     main {
         java {
-            srcDirs = ['game', 'model']
+            srcDirs = ['src/main/java']
         }
         resources {
-            srcDirs = ['resources']
+            srcDirs = ['src/resources']
         }
     }
 }

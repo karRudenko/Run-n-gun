@@ -1,17 +1,17 @@
-package client.game;
+package com.shootergame.client;
 
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3Application;
 import com.badlogic.gdx.backends.lwjgl3.Lwjgl3ApplicationConfiguration;
+import com.shootergame.client.core.GameApplication;
 
-public class GameMain {
+public class Launcher {
     public static void main(String[] args) {
         Lwjgl3ApplicationConfiguration config = new Lwjgl3ApplicationConfiguration();
         config.setTitle("Multiplayer Shooter");
-        config.setWindowedMode(800, 600);
+        config.setWindowedMode(1280, 720);
         config.setForegroundFPS(60);
-        config.setResizable(true);
-
-        System.out.println("Starting game window...");
-        new Lwjgl3Application(new GameScreen(), config);
+        config.setIdleFPS(60);
+        
+        new Lwjgl3Application(new GameApplication(), config);
     }
 }
