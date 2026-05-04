@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+
 import org.junit.jupiter.api.Test;
 
 import com.vitua.game.Engine.Collision;
@@ -12,20 +13,25 @@ import com.vitua.game.Engine.CollisionManager;
 import com.vitua.game.Engine.GameMap;
 import com.vitua.game.Engine.GameObject;
 import com.vitua.game.Engine.Player;
+import com.vitua.game.Engine.RaycastResult;
+import com.vitua.game.EventSystem.EventManager;
+import com.vitua.game.EventSystem.EventType;
+import com.vitua.game.EventSystem.MassageEvent;
+import com.vitua.game.EventSystem.Event;
 import com.vitua.game.math.Vector2D;
 
 
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Shape;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 /**
  * Unit test for simple App.
  */
 
 public class AppTest {
-
+    String eventTest;
     /**
      * Rigorous Test :-)
      */
@@ -136,4 +142,54 @@ public class AppTest {
         assertEquals(1, colMan.getSoftCollSize());
     }
 
+
+    @Test
+    public void rayTest() {
+        
+        
+        Player a = new Player(new Vector2D(0, 2), new Collision(Collision.getRecCollision(1, 1)));
+        a.setName("a");
+        Player b = new Player(new Vector2D(2, 0), new Collision(Collision.getRecCollision(1, 1)));
+        b.setName("b");
+        Player c = new Player(new Vector2D(10, 0), new Collision(Collision.getRecCollision(1, 1)));
+        c.setName("c");
+
+        Collection<GameObject> objs= new ArrayList<>();
+        objs.addAll(Arrays.asList(a,b,c));
+
+        CollisionManager colMan = new CollisionManager();
+
+        RaycastResult res =  colMan.getRayCollision(new Vector2D(0, 0), new Vector2D(0.1, 0), 10, objs);
+        assertTrue(res.hitObject == b);
+        assertEquals(res.hitPoint.getM_x(), 1.5,0.1);
+        
+        res =  colMan.getRayCollision(new Vector2D(0, 0), new Vector2D(0 ,0.1), 10, objs);
+        assertTrue(res.hitObject == a);
+        assertEquals(res.hitPoint.getM_y(), 1.5,0.1);
+        
+
+
+        res =  colMan.getRayCollision(new Vector2D(5, 0), new Vector2D(0.1 ,0), 10, objs);
+        assertTrue(res.hitObject == c);
+        assertEquals(res.hitPoint.getM_x(), 9.5,0.1);
+        res =  colMan.getRayCollision(new Vector2D(5, 0), new Vector2D(-0.1,0), 10, objs);
+        assertTrue(res.hitObject == b);
+        assertEquals(res.hitPoint.getM_x(), 2.5,0.1);
+        
+    }
+
+    @Test
+    public void eventTest(){
+       EventManager manager = new EventManager();
+       manager.subscribe(EventType.MESSAGE_EVENT, (event)->{this.eventReciver(event);});
+       Event e = new MassageEvent("test");
+       manager.sendEventDirect(EventType.MESSAGE_EVENT, e);
+       assertTrue(eventTest.equals("test"));
+    
+    }
+    void eventReciver(Event event){
+        if (event instanceof MassageEvent massageEvent) {
+            eventTest=massageEvent.data;
+        }
+    }
 }
