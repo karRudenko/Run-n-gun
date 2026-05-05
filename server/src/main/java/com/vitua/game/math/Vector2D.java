@@ -54,6 +54,9 @@ public class Vector2D{
     }
     public static Vector2D normalaze(Vector2D a){
         return new Vector2D(a.m_x/a.length(), a.m_y/a.length());
-    }    
+    } 
+    public String toString(){
+        return "[x:" + getM_x() + " y:" + getM_y() + "]";
+    }
 
 }

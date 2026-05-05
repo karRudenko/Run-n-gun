@@ -5,26 +5,41 @@ import java.util.Queue;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Stack;
+import java.util.stream.Collectors;
 import java.util.List;
+
+
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import javafx.util.Pair;
 import org.springframework.stereotype.Component;
 
+import com.vitua.game.Engine.Collisions.Collision;
+import com.vitua.game.Engine.Collisions.CollisionManager;
+import com.vitua.game.Engine.Collisions.RaycastResult;
+import com.vitua.game.Engine.Weapons.ShotRecord;
+import com.vitua.game.EventSystem.Event;
+import com.vitua.game.EventSystem.EventManager;
+import com.vitua.game.EventSystem.EventType;
+import com.vitua.game.EventSystem.ShotEvent;
 import com.vitua.game.math.Vector2D;
 
 @Component
 public class GameMap {
-    Map<String, Integer> nameId;
-    Map<Integer, GameObject> idObject;
-    Map<Integer, Vector2D> posMemo;
-    Stack<Integer> ids; 
-    List<Vector2D> spawnPoints;
-    CollisionManager collisionManager;
-    long lastUpdate=System.nanoTime();
-    Queue<Player> spawnQueue = new LinkedList<>();
-    public GameMap(){
+    protected Map<String, Integer> nameId;
+    protected Map<Integer, GameObject> idObject;
+    protected Map<Integer, Vector2D> posMemo;
+    protected Stack<Integer> ids; 
+    protected List<Vector2D> spawnPoints;
+    protected CollisionManager collisionManager;
+    protected long lastUpdate=System.nanoTime();
+    protected Queue<Player> spawnQueue = new LinkedList<>();
+    public List<ShotRecord> shotRecords= new ArrayList<>();
+    protected EventManager eventManager;
+    
+    public GameMap(EventManager eventManager){
+        this.eventManager=eventManager;
         nameId= new HashMap<>();
         idObject = new HashMap<>();
         ids=new Stack<>();
@@ -33,6 +48,8 @@ public class GameMap {
         ids.add(0); 
         spawnPoints = new ArrayList<>();
         spawnPoints=getBaseSpawnPoints();
+        eventManager.subscribe(EventType.SHOT_EVENT, (e) -> registerShots(e));
+        
 
     }
     
@@ -46,7 +63,7 @@ public class GameMap {
         
         if(nameId.containsKey(nickName)) return false;
         int id =getId();
-        Player player = new Player(new Collision(Collision.getRecCollision(0.2,1)));
+        Player player = new Player(new Collision(Collision.getRecCollision(0.2,1)), eventManager);
         player.setId(id);
         player.setName(nickName);
         nameId.put(nickName, id);
@@ -57,7 +74,7 @@ public class GameMap {
     protected boolean spawnPlayer(Player player){
         Vector2D pos = null;
         Collision areaOfSpawn = new Collision(Collision.getRecCollision(2, 2));
-        Collection<GameObject> objects=idObject.values();
+        Collection<GameObject> objects=getActivGameObjects();
         for(Vector2D v : spawnPoints){
             pos=v;
             areaOfSpawn.setPos(pos);
@@ -85,6 +102,18 @@ public class GameMap {
     public Map<String, Integer> getNameId() {
         return nameId;
     }
+    public List<GameObject> getActivGameObjects(){
+        ArrayList<GameObject> activeObjects=new ArrayList<>();
+        for(GameObject o : idObject.values()){
+            if(o.isActive()){
+                activeObjects.add(o);
+            }
+        }
+        return activeObjects;
+    }
+
+
+    
     protected void writeMemo(){
         posMemo.clear();
         for(Map.Entry<Integer, GameObject> entry : idObject.entrySet()){
@@ -92,15 +121,17 @@ public class GameMap {
         }
     }
     public void update(){
-        if(!spawnQueue.isEmpty()){
+        List<GameObject> activeObjects=getActivGameObjects();
+
+        while(!spawnQueue.isEmpty()){
             spawnPlayer(spawnQueue.poll());
         }
         long t = System.nanoTime();
-        for(GameObject o : idObject.values()){
+        for(GameObject o : activeObjects){
             o.update(t-lastUpdate);
         }
         lastUpdate=System.nanoTime();
-        collisionManager.resolveColisions(idObject.values());
+        collisionManager.resolveColisions(activeObjects);
         writeMemo();
     }
     protected List<Vector2D> getBaseSpawnPoints(){
@@ -109,6 +140,20 @@ public class GameMap {
     }
     public Player getPlayer(String nickName){
         return (Player)  idObject.get(nameId.get(nickName));
+    }
+    
+    public void registerShots(Event event){
+        if(event instanceof ShotEvent shot){
+            
+            List<GameObject> objectsToCheck=getActivGameObjects().parallelStream().filter(o -> o.getId()!=shot.ownerId).collect(Collectors.toList());
+            
+            RaycastResult res= collisionManager.getRayCollision(shot.startPos, Vector2D.vecScal(shot.direction, 0.01), 
+                                                                10, objectsToCheck);
+            
+
+            
+            shotRecords.add(new ShotRecord(res,idObject.get(shot.ownerId)));
+        }
     }
 
 }

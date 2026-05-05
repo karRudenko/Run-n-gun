@@ -1,8 +1,9 @@
-package com.vitua.game.Engine;
+package com.vitua.game.Engine.Collisions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import com.vitua.game.Engine.GameObject;
 import com.vitua.game.math.Vector2D;
 
 import javafx.util.Pair;
@@ -48,12 +49,12 @@ public class CollisionManager {
      public boolean checkCollisionOfObjects(Collision a, Collision b){
         Shape colA = a.getCollisionShape();
         Shape colB =b.getCollisionShape();
-        return Shape.intersect(colA, colB).getBoundsInLocal().getWidth() != -1;
+        return Shape.intersect(colA, colB).getBoundsInLocal().getWidth() > 0;
     }
     public boolean checkCollisionOfObjects(Collision  a, GameObject b){
         Shape colA = a.getCollisionShape();
         Shape colB =b.getCollision().getCollisionShape();
-        return Shape.intersect(colA, colB).getBoundsInLocal().getWidth() != -1;
+        return Shape.intersect(colA, colB).getBoundsInLocal().getWidth() > 0;
     }
 
     public void  getCollisions(Collection<GameObject> objs){
@@ -104,6 +105,7 @@ public class CollisionManager {
         for(double checked=0.0; checked <= distance; checked+=checkDistance){
             point = point.add(dir.getM_x(),dir.getM_y());
 
+
             for(GameObject o : objectsToCheck){
 
                 // List<Double> points =o.getCollision().getCollision();
@@ -116,12 +118,12 @@ public class CollisionManager {
                 
                 if(checkCollisionOfObjects(o,point)){
 
-                    return new RaycastResult(o, new Vector2D(point.getX(), point.getY()));
+                    return new RaycastResult(o, new Vector2D(point.getX(), point.getY()), startPoint);
                 }
             }
 
         }
-        return new RaycastResult(null,null);
+        return new RaycastResult(null,new Vector2D(point.getX(), point.getY()),startPoint);
     }
     
 }

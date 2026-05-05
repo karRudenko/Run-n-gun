@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.junit.jupiter.api.Test;
 
-import com.vitua.game.Engine.Collision;
-import com.vitua.game.Engine.CollisionManager;
 import com.vitua.game.Engine.GameMap;
 import com.vitua.game.Engine.GameObject;
 import com.vitua.game.Engine.Player;
-import com.vitua.game.Engine.RaycastResult;
+import com.vitua.game.Engine.Collisions.Collision;
+import com.vitua.game.Engine.Collisions.CollisionManager;
+import com.vitua.game.Engine.Collisions.RaycastResult;
 import com.vitua.game.EventSystem.EventManager;
 import com.vitua.game.EventSystem.EventType;
 import com.vitua.game.EventSystem.MassageEvent;
@@ -105,7 +105,7 @@ public class AppTest {
     }
     @Test
     public void mapTest(){
-        GameMap m = new GameMap();
+        GameMap m = new GameMap(new EventManager());
         m.addPlayer("biba");
         assertFalse(m.addPlayer("biba"));
     }
@@ -160,21 +160,21 @@ public class AppTest {
         CollisionManager colMan = new CollisionManager();
 
         RaycastResult res =  colMan.getRayCollision(new Vector2D(0, 0), new Vector2D(0.1, 0), 10, objs);
-        assertTrue(res.hitObject == b);
-        assertEquals(res.hitPoint.getM_x(), 1.5,0.1);
+        assertTrue(res.hitObject() == b);
+        assertEquals(res.hitPoint().getM_x(), 1.5,0.1);
         
         res =  colMan.getRayCollision(new Vector2D(0, 0), new Vector2D(0 ,0.1), 10, objs);
-        assertTrue(res.hitObject == a);
-        assertEquals(res.hitPoint.getM_y(), 1.5,0.1);
+        assertTrue(res.hitObject() == a);
+        assertEquals(res.hitPoint().getM_y(), 1.5,0.1);
         
 
 
         res =  colMan.getRayCollision(new Vector2D(5, 0), new Vector2D(0.1 ,0), 10, objs);
-        assertTrue(res.hitObject == c);
-        assertEquals(res.hitPoint.getM_x(), 9.5,0.1);
+        assertTrue(res.hitObject() == c);
+        assertEquals(res.hitPoint().getM_x(), 9.5,0.1);
         res =  colMan.getRayCollision(new Vector2D(5, 0), new Vector2D(-0.1,0), 10, objs);
-        assertTrue(res.hitObject == b);
-        assertEquals(res.hitPoint.getM_x(), 2.5,0.1);
+        assertTrue(res.hitObject() == b);
+        assertEquals(res.hitPoint().getM_x(), 2.5,0.1);
         
     }
 
@@ -191,5 +191,26 @@ public class AppTest {
         if (event instanceof MassageEvent massageEvent) {
             eventTest=massageEvent.data;
         }
+    }
+
+    @Test
+    public void shootTest(){
+        GameMap map=new GameMap(new EventManager());
+        map.addPlayer("a");
+        map.addPlayer("b");
+        Player a=map.getPlayer("a");
+        Player b=map.getPlayer("b");
+
+        map.update();
+
+        a.setPos(new Vector2D(0, 0));
+        a.setRotation(0);
+        b.setPos(new Vector2D(2, 0));
+
+        a.shoot();
+        assertTrue(map.shotRecords.get(0).shot().hitObject()==b);
+        assertEquals(map.shotRecords.get(0).shot().hitPoint().getM_x(), 1.9,0.10);
+
+    
     }
 }

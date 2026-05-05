@@ -3,20 +3,29 @@ package com.vitua.game.Engine;
 
 import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
+import com.vitua.game.Engine.Collisions.Collision;
+import com.vitua.game.Engine.Weapons.Weapon;
+import com.vitua.game.EventSystem.EventManager;
+import com.vitua.game.Engine.Weapons.DebugGun;
 import com.vitua.game.math.Vector2D;
 
 public class Player extends GameObject{
-    InputRecord playerInput;
+    InputRecord playerInput=InputRecord.emptyInputRecord();
+    Weapon weapon=null;
+
     public void injectInput(InputRecord input){
         playerInput=input;
     }
+    public Player(Collision collision, EventManager eventManager){
+        super(collision,eventManager);
+        weapon=new DebugGun(this,eventManager);
+    }
+
     public Player(Vector2D pos, Collision col){
         super(pos, col);
-        playerInput=InputRecord.emptyInputRecord();
     }
     public Player(Collision col){
         super(col);
-        playerInput=InputRecord.emptyInputRecord();
     }
     public PlayerData gPlayerData(){
         return new PlayerData(name, pos.getM_x(), pos.getM_y(), collision.getCollision());
@@ -36,6 +45,7 @@ public class Player extends GameObject{
     private void handleInput(double deltaTimeSec){
         handleMovement(deltaTimeSec);
     }
+    
     private void handleMovement(double deltaTimeSec){
         double friction=0.99;
         vel=Vector2D.addVectors(vel, Vector2D.vecScal(Vector2D.negativeVector2d(vel),friction*deltaTimeSec));
@@ -61,6 +71,9 @@ public class Player extends GameObject{
         if(vel.length()>maxSpeed){
             vel=Vector2D.vecScal(Vector2D.normalaze(vel), maxSpeed);
         }
+    }
+    public void shoot(){
+        weapon.shoot();
     }
 
 }

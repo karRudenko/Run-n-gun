@@ -1,8 +1,15 @@
 package com.vitua.game.Engine;
 
+
+import com.vitua.game.Engine.Collisions.Collision;
+import com.vitua.game.EventSystem.EventManager;
 import com.vitua.game.math.Vector2D;
 
 public class GameObject {
+    public GameObject(Collision collision, EventManager eventManager){
+        this.collision=collision;
+        this.eventManager=eventManager;
+    }
     public GameObject(Vector2D pos, Collision collision){
         this.collision=collision;
         setPos(pos);
@@ -65,7 +72,7 @@ public class GameObject {
         return collision;
     }
     public Vector2D getPos() {
-        return pos;
+        return pos.copy();
     }
     public void update(long nanoDeltaTime){
         if(!active) return;
@@ -87,12 +94,16 @@ public class GameObject {
     public boolean isActive() {
         return active;
     }
+    public void handleHit(){
+
+    }
     protected String name; 
     protected Vector2D pos = new Vector2D(0, 0);
     protected Vector2D vel = new Vector2D(0, 0);
     protected double rotation=0;
     protected Collision collision;
     protected double size;
-    protected int id=0;
+    protected int id=-1;
     protected boolean active =false;
+    protected EventManager eventManager=null;
 }

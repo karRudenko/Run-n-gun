@@ -5,6 +5,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Component;
+@Component
 public class EventManager {
     Map<EventType,List<EventReceiver>> subs;
     public EventManager(){
@@ -16,7 +18,7 @@ public class EventManager {
         subs.put(type,list);
     }
     public void sendEventDirect(EventType type, Event event){
-        List<EventReceiver> listeners = subs.get(type);
+        List<EventReceiver> listeners = subs.getOrDefault(type, new ArrayList<>());
         for(EventReceiver l : listeners){
             l.handle(event);
         }

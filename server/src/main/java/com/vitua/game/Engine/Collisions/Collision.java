@@ -1,4 +1,4 @@
-package com.vitua.game.Engine;
+package com.vitua.game.Engine.Collisions;
 import javafx.scene.shape.Polygon;
 import javafx.scene.shape.Shape;
 import java.util.List;
