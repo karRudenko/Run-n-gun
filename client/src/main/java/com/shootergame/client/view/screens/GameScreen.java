@@ -32,7 +32,7 @@ public class GameScreen implements Screen {
     private ShapeRenderer shapeRenderer;
     private BitmapFont font;
     
-    // Texture
+    // Textures
     private Texture playerTexture;
     private Pixmap pixmap;
     
@@ -47,6 +47,8 @@ public class GameScreen implements Screen {
     private float lastSendTime = 0;
     private static final float SEND_INTERVAL = 0.05f;
     
+    private float cameraX, cameraY;
+
     public GameScreen(GameApplication game, String serverIp, int serverPort, String nickname) {
         this.game = game;
         this.myNickname = nickname;
@@ -73,7 +75,7 @@ public class GameScreen implements Screen {
 
         socketClient = new GameSocketClient(game.getServerIp(), game.getServerPort(), myNickname, new GameSocketClient.SocketListener() {
             @Override
-            public void onGameStateReceived(JsonValue playersData) {
+            public void onGameStateReceived(String currentPlayerNickname, JsonValue playersData) {
                 parsePlayersFromServer(playersData);
             }
             

@@ -102,7 +102,7 @@ public class ConnectScreen implements Screen {
             }
         }
         // ================================================================================
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)  && !isConnecting) {
             errorMessage = "";
             String nickname = nicknameInput.toString().trim();
             String ip = ipInput.toString().trim();
@@ -115,6 +115,7 @@ public class ConnectScreen implements Screen {
             } else {
                 errorMessage = "The nickname is empty or taken";
             }
+            connectToServer();
         }
         
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
@@ -130,6 +131,46 @@ public class ConnectScreen implements Screen {
         } else if (typingPort && portInput.length() < 6 && Character.isDigit(c)) {
             portInput.append(c);
         }
+    }
+
+    private void connectToServer() {
+        String nickname = nicknameInput.toString().trim();
+        String ip = ipInput.toString().trim();
+        int port;
+        
+        try {
+            port = Integer.parseInt(portInput.toString().trim());
+        } catch (NumberFormatException e) {
+            statusMessage = "Incorrect port number";
+            return;
+        }
+        
+        if (nickname.isEmpty()) {
+            statusMessage = "Nickname cannot be empty";
+            return;
+        }
+        isConnecting = true;
+        statusMessage = "Regestration on the serser...";
+        
+        registrationClient.register(nickname, new RegistrationClient.RegistrationCallback() {
+            @Override
+            public void onSuccess(String response) {
+                Gdx.app.log("ConnectScreen", "Registration successful: " + response);
+                statusMessage = "Registration successful. Conecting with the socket...";
+                
+                game.setPlayerInfo(nickname, ip, port);
+                
+                Gdx.app.postRunnable(() -> {
+                    game.setScreen(new GameScreen(game, ip, port, nickname));
+                });
+            }
+            @Override
+            public void onError(String error) {
+                Gdx.app.log("ConnectScreen", "Error with regestration: " + error);
+                statusMessage = "Error with regestration: " + error;
+                isConnecting = false;
+            }
+        });
     }
     
     @Override public void resize(int width, int height) {}
