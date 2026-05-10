@@ -1,9 +1,9 @@
 package com.shootergame.client.network.http;
 
 import com.badlogic.gdx.Net;
-import com.badlogic.gdx.net.HttpRequest;
-import com.badlogic.gdx.net.HttpResponse;
-import com.badlogic.gdx.net.HttpResponseListener;
+import com.badlogic.gdx.Net.HttpRequest;
+import com.badlogic.gdx.Net.HttpResponse;
+import com.badlogic.gdx.Net.HttpResponseListener;
 import com.badlogic.gdx.utils.JsonWriter;
 import com.badlogic.gdx.utils.Json;
 import com.badlogic.gdx.Gdx;
@@ -19,10 +19,9 @@ public class RegistrationClient {
     }
     
     public void register(String nickname, RegistrationCallback callback) {
-        RegisterRequest request = new RegisterRequest(nickname);
-        String jsonBody = json.toJson(request);
+        String jsonBody = "{\"name\":\"" + nickname + "\"}";
         
-        HttpRequest httpRequest = new HttpRequest(HttpRequest.HttpMethods.POST);
+        HttpRequest httpRequest = new HttpRequest(Net.HttpMethods.POST);
         httpRequest.setUrl(REGISTER_URL);
         httpRequest.setHeader("Content-Type", "application/json");
         httpRequest.setContent(jsonBody);

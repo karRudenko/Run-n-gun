@@ -121,6 +121,14 @@ public class GameSocketClient {
         }
     }
     
+    public void sendShoot(float targetX, float targetY) {
+        String shootJson = String.format(
+            "{\"type\":\"shoot\",\"nickName\":\"%s\",\"targetX\":%.2f,\"targetY\":%.2f}",
+            playerNickname, targetX, targetY
+        );
+        sendMessage(shootJson);
+    }
+
     public void disconnect() {
         try {
             connected = false;

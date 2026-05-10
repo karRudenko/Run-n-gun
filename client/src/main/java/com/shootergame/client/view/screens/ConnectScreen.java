@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.Input;
 import com.shootergame.client.core.GameApplication;
 import com.shootergame.client.model.entities.Record;
+import com.shootergame.client.network.http.RegistrationClient;
 
 public class ConnectScreen implements Screen {
     private GameApplication game;
@@ -23,6 +24,10 @@ public class ConnectScreen implements Screen {
     private boolean typingNickname = true;
     private boolean typingIp = false;
     private boolean typingPort = false;
+
+    private boolean isConnecting = false;
+    private String statusMessage = "";
+    private RegistrationClient registrationClient = new RegistrationClient();
     
     public ConnectScreen(GameApplication game) {
         this.game = game;
@@ -43,6 +48,9 @@ public class ConnectScreen implements Screen {
         handleInput();
         
         batch.begin();
+        if (!statusMessage.isEmpty()) {
+            font.draw(batch, statusMessage, 300, 100);
+        }
         font.draw(batch, "MULTIPLAYER SHOOTER", 350, 650);
         font.draw(batch, "Nickname: " + nicknameInput.toString() + (typingNickname ? "_" : ""), 300, 500);
         font.draw(batch, "Server IP: " + ipInput.toString() + (typingIp ? "_" : ""), 300, 430);
@@ -104,17 +112,6 @@ public class ConnectScreen implements Screen {
         // ================================================================================
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)  && !isConnecting) {
             errorMessage = "";
-            String nickname = nicknameInput.toString().trim();
-            String ip = ipInput.toString().trim();
-            int port = Integer.parseInt(portInput.toString().trim());
-            
-            if (!nickname.isEmpty() && !players.containsValue(new StringBuilder(ip+port), new StringBuilder(nickname))) {
-                players.addPlayer(new StringBuilder(ip+port), new StringBuilder(nickname));
-                game.setPlayerInfo(nickname, ip, port);
-                game.setScreen(new GameScreen(game, ip, port, nickname));
-            } else {
-                errorMessage = "The nickname is empty or taken";
-            }
             connectToServer();
         }
         
