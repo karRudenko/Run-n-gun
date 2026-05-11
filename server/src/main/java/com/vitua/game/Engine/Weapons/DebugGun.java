@@ -15,6 +15,6 @@ public class DebugGun extends Weapon {
     public void shoot() {
         Vector2D ownerDirection=owner.forward();
         Vector2D shotPos=owner.getPos();
-        eventManager.sendEventDirect(EventType.SHOT_EVENT,new ShotEvent(ownerDirection, shotPos, owner.getId()));
+        eventManager.sendEventDirect(EventType.SHOT_EVENT,new ShotEvent(ownerDirection, shotPos, owner.getId(),this));
     }
 }

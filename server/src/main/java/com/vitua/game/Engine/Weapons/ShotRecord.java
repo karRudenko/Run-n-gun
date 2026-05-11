@@ -5,7 +5,8 @@ import com.vitua.game.Engine.Collisions.RaycastResult;
 
 public record ShotRecord(
     RaycastResult shot,
-    GameObject owner
+    GameObject owner,
+    Weapon weapon
 ) {
     
 }
