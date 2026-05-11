@@ -7,3 +7,4 @@ gradlew
 server/.vscode/
 server/.mvn/
 server/target/
+*.html

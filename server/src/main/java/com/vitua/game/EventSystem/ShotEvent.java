@@ -1,6 +1,7 @@
 package com.vitua.game.EventSystem;
 
 import com.vitua.game.Engine.Weapons.Weapon;
+import com.vitua.game.Engine.Weapons.Weapon;
 import com.vitua.game.math.Vector2D;
 
 public class ShotEvent implements Event{
