@@ -2,6 +2,7 @@ package com.vitua.game.Engine;
 
 
 import com.vitua.game.Engine.Collisions.Collision;
+import com.vitua.game.Engine.Weapons.ShotRecord;
 import com.vitua.game.EventSystem.EventManager;
 import com.vitua.game.math.Vector2D;
 
@@ -24,6 +25,10 @@ public class GameObject {
         return id;
     }
     public void setPos(Vector2D pos) {
+        if (pos == null) {
+
+            return; 
+        }
         this.pos = pos.copy();
         collision.setPos(pos);
     }
@@ -94,8 +99,11 @@ public class GameObject {
     public boolean isActive() {
         return active;
     }
-    public void handleHit(){
-
+    public void handleHit(ShotRecord record){
+        
+    }
+    public double getRotation(){
+        return rotation;
     }
     protected String name; 
     protected Vector2D pos = new Vector2D(0, 0);

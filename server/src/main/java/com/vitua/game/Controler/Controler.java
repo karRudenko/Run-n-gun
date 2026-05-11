@@ -33,6 +33,7 @@ public class Controler {
     @PostMapping("/all")
     public GameResponceDTO getAllPlayers(@RequestBody  InputData rec){
         service.injectInput(rec.nickName(), rec.data());
+
         return service.getAllPlayers(rec.nickName());
         
     }

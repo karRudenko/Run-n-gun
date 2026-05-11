@@ -2,6 +2,7 @@ package com.vitua.game.Engine.Collisions;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import com.vitua.game.Engine.GameObject;
 import com.vitua.game.math.Vector2D;
@@ -12,7 +13,7 @@ import javafx.scene.shape.Shape;
 public class CollisionManager {
     List<Pair<GameObject,GameObject>> softColl;
     List<GameObject> hardColl;
-    public void resolveColisions(Collection<GameObject> objects){
+    public void resolveColisions(Collection<GameObject> objects, Map<Integer, Vector2D> posMemo){
         getCollisions(objects);
         for(Pair<GameObject,GameObject> pair : softColl){
             handleCollision(pair);
@@ -20,16 +21,19 @@ public class CollisionManager {
         }
         
         for(GameObject obj : hardColl){
-            resolveCollision(obj);
+            resolveCollision(obj, posMemo);
         }
     }
+    public void resolveColisions(Collection<GameObject> objects){
+        getCollisions(objects);
 
+    }
 
     private void handleCollision(Pair<GameObject,GameObject> collisions){
 
     }
-    private void resolveCollision(GameObject object){
-
+    private void resolveCollision(GameObject object, Map<Integer, Vector2D> memo){
+        object.setPos(memo.get(object.getId()));
     }
 
 
@@ -90,12 +94,10 @@ public class CollisionManager {
         return softColl.size();
     }
 
-    public RaycastResult getRayCollision(Vector2D startPoint, Vector2D dir, double distance, Collection<GameObject> objects){
+    public RaycastResult getRayCollision(Vector2D startPoint, Vector2D dir, double distance, Collection<? extends GameObject> objects){
         Collection<GameObject> objectsToCheck = new  ArrayList<>();
         for(GameObject o : objects){
-            if(Vector2D.addVectors(Vector2D.negativeVector2d(startPoint), o.getPos()).dotProduct(dir)>0){
-                objectsToCheck.add(o);
-            }
+            objectsToCheck.add(o);
         }
 
         double checkDistance=dir.length();
