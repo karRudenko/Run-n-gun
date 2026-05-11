@@ -32,13 +32,7 @@ import java.util.List;
 
 public class AppTest {
     String eventTest;
-    /**
-     * Rigorous Test :-)
-     */
-    @Test
-    public void shouldAnswerWithTrue() {
-        assertTrue(true);
-    }
+
 
 
     @Test
@@ -208,8 +202,10 @@ public class AppTest {
         b.setPos(new Vector2D(2, 0));
 
         a.shoot();
+        
         assertTrue(map.shotRecords.get(0).shot().hitObject()==b);
         assertEquals(map.shotRecords.get(0).shot().hitPoint().getM_x(), 1.9,0.10);
+        map.update();
 
     
     }

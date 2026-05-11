@@ -126,11 +126,23 @@ public class GameMap {
         while(!spawnQueue.isEmpty()){
             spawnPlayer(spawnQueue.poll());
         }
+
         long t = System.nanoTime();
         for(GameObject o : activeObjects){
             o.update(t-lastUpdate);
-        }
+        
+        }  
         lastUpdate=System.nanoTime();
+
+        for(ShotRecord record : shotRecords){
+            record.shot().hitObject().handleHit(record);
+        }
+        shotRecords.clear();
+
+        
+
+
+
         collisionManager.resolveColisions(activeObjects);
         writeMemo();
     }
@@ -152,7 +164,7 @@ public class GameMap {
             
 
             
-            shotRecords.add(new ShotRecord(res,idObject.get(shot.ownerId)));
+            shotRecords.add(new ShotRecord(res,idObject.get(shot.ownerId),shot.weapon));
         }
     }
 
