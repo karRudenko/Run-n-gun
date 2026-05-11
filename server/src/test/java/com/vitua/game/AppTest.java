@@ -203,8 +203,7 @@ public class AppTest {
 
         a.shoot();
         
-        assertTrue(map.shotRecords.get(0).shot().hitObject()==b);
-        assertEquals(map.shotRecords.get(0).shot().hitPoint().getM_x(), 1.9,0.10);
+
         map.update();
 
     

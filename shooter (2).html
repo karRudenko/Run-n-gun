@@ -90,6 +90,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .pdo{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0}
 .pn{color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pp{color:var(--mut);font-size:9px}
+.pid{color:var(--mut);font-size:9px;margin-right:4px}
 
 #ov{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
     align-items:center;justify-content:center;gap:16px;z-index:50;transition:opacity .35s}
@@ -184,8 +185,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 const API          = 'http://localhost:8080/game';
 const TICK_MS      = 50;
 const SCALE        = 40;
-const RAY_LEN      = 0.55;  // длина летящего луча в игровых единицах
-const RAY_SPEED    = 28;    // скорость луча ед/сек
+const RAY_LEN      = 0.55;
+const RAY_SPEED    = 28;
 const PLAYER_SPEED = 10;
 const SNAP_DIST    = 4;
 const CORR_RATE    = 10;
@@ -196,6 +197,7 @@ const CORR_DEAD    = 0.005;
 // ═══════════════════════════════════════════════════
 const G = {
   nick: '',
+  myId: null,           // ← мой id с сервера
   ready: false,
   px: 0, py: 0,
   corrX: 0, corrY: 0,
@@ -207,9 +209,10 @@ const G = {
   tickSentAt: 0,
   rtt: 0,
 
-  othersA: [], othersB: [],
+  // Снимки других игроков для интерполяции (Map по id)
+  othersA: new Map(), othersB: new Map(),
   tA: 0, tB: 0,
-  interpOthers: [],
+  interpOthers: [],     // массив интерполированных игроков для текущего кадра
 
   shots: [],
 
@@ -237,16 +240,34 @@ function setSt(msg, cls) {
   const e = $('st'); e.textContent = msg; e.className = 'st '+(cls||'');
 }
 
-function lerpOthers(a, b, t) {
-  return b.map(pb => {
-    const pa = a.find(p => p.name === pb.name);
-    if (!pa) return pb;
-    return { name: pb.name, x: pa.x+(pb.x-pa.x)*t, y: pa.y+(pb.y-pa.y)*t, poly: pb.poly };
+// Интерполяция игроков по id (а не по имени)
+function lerpOthers(mapA, mapB, t) {
+  const result = [];
+  mapB.forEach((pb, id) => {
+    const pa = mapA.get(id);
+    if (!pa) { result.push(pb); return; }
+    result.push({
+      id,
+      name: pb.name,
+      x: pa.x + (pb.x - pa.x) * t,
+      y: pa.y + (pb.y - pa.y) * t,
+      poly: pb.poly,
+    });
   });
+  return result;
+}
+
+// Найти игрока (любого, включая меня) по id среди известных кадру сущностей
+function findEntityById(id) {
+  if (id === G.myId) return { x: G.px, y: G.py };
+  for (const o of G.interpOthers) if (o.id === id) return { x: o.x, y: o.y };
+  // fallback на последний снимок
+  const o = G.othersB.get(id);
+  return o ? { x: o.x, y: o.y } : null;
 }
 
 // ═══════════════════════════════════════════════════
-//  SAT COLLISION (polygon vs polygon)
+//  SAT COLLISION
 // ═══════════════════════════════════════════════════
 function polyFromOffsets(cx, cy, offs) {
   const v = [];
@@ -276,24 +297,18 @@ function _satAxes(src, other) {
 // ═══════════════════════════════════════════════════
 //  WEAPON HUD
 // ═══════════════════════════════════════════════════
-// Отдача: recoil — половина угла разброса (от сервера, в градусах или радианах?)
-// Предполагаем gradусы. Нормируем по диапазону 0–45° для цветового индикатора.
 const MAX_RECOIL_DEG = 45;
 
 function updateWeaponHUD(w) {
   if (!w) return;
   $('wp-name').textContent = w.name || '—';
-
   const cur = w.ammo ?? 0;
   const max = w.maxAmmo ?? 0;
   const curEl = $('wp-ammo-cur');
   curEl.textContent = cur;
   curEl.className = 'wp-ammo-cur' + (cur <= Math.ceil(max * 0.25) && cur > 0 ? ' low' : '');
   $('wp-ammo-max').textContent = max;
-
   $('wp-reload').textContent = w.isRealoading ? '⟳ RELOADING...' : '';
-
-  // Pips (max 30 отображаем)
   const pipsEl = $('wp-pips');
   const show = Math.min(max, 30);
   if (pipsEl.children.length !== show) {
@@ -307,8 +322,6 @@ function updateWeaponHUD(w) {
   Array.from(pipsEl.children).forEach((p, i) => {
     p.className = 'pip' + (i < filled ? '' : ' empty');
   });
-
-  // Recoil bar — recoil это половина угла разброса в градусах
   const recoilDeg = w.recoil ?? 0;
   const pct = Math.min(100, (recoilDeg / MAX_RECOIL_DEG) * 100);
   $('wp-recoil-fill').style.width = pct + '%';
@@ -360,8 +373,6 @@ function startGame() {
   G.prevFrame  = now;
   G.fpsTimer   = now;
   G.lastSpeedT = now;
-  G.lastPx     = 0;
-  G.lastPy     = 0;
   setInterval(tick, TICK_MS);
   requestAnimationFrame(frame);
   setTimeout(() => $('ov').classList.add('gone'), 1500);
@@ -433,10 +444,12 @@ function onServer(data) {
   if (data.myPlayer) {
     const sp = data.myPlayer;
 
+    // ── Запоминаем свой id ──
+    if (sp.id !== undefined) G.myId = sp.id;
+
     const srvSpeed = Math.sqrt((sp.xSpeed||0)**2 + (sp.ySpeed||0)**2);
     $('h-spd-s').textContent = srvSpeed.toFixed(2);
 
-    // Weapon state
     if (sp.weapon) {
       G.weapon = sp.weapon;
       updateWeaponHUD(G.weapon);
@@ -464,45 +477,78 @@ function onServer(data) {
     G.polyOff = sp.polygons || [];
   }
 
-  const prevNames = G.othersB.map(p => p.name);
+  // ── Снимки других игроков по id ──
+  const prevIds = new Set(G.othersB.keys());
   G.othersA = G.othersB;
   G.tA      = G.tB;
-  G.othersB = (data.players || []).map(p => ({
-    name: p.name,
-    x:    p.x,
-    y:    p.y,
-    poly: p.polygons || [],
-  }));
+
+  const newMap = new Map();
+  (data.players || []).forEach(p => {
+    if (p.id === undefined) return;
+    newMap.set(p.id, {
+      id:   p.id,
+      name: p.name,
+      x:    p.x,
+      y:    p.y,
+      poly: p.polygons || [],
+    });
+  });
+  G.othersB = newMap;
   G.tB = now;
 
-  G.othersB.forEach(p => { if (!prevNames.includes(p.name)) killfeed(p.name+' joined'); });
+  newMap.forEach((p, id) => {
+    if (!prevIds.has(id)) killfeed(p.name + ' joined');
+  });
 
-  // ── Выстрелы: создаём летящий луч ──
+  // ═══════════════════════════════════════════════
+  //  ВЫСТРЕЛЫ — новый формат
+  //  shooterId          — id стрелка (привязка начала)
+  //  startX, startY     — мировые координаты точки выстрела (исторические)
+  //  hittedObjectId     — id попадания (-1 если промах)
+  //  endXRelative, endYRelative — если попал: смещение относительно центра объекта;
+  //                               если промах: абсолютные мировые координаты
+  // ═══════════════════════════════════════════════
   if (data.shot && data.shot.length) {
     data.shot.forEach(s => {
-      let ox = 0, oy = 0;
-      if (s.shooterName === G.nick && data.myPlayer) {
-        ox = G.px - data.myPlayer.x;
-        oy = G.py - data.myPlayer.y;
-      }
-      const sx1 = s.startX + ox, sy1 = s.startY + oy;
-      const sx2 = s.endX   + ox, sy2 = s.endY   + oy;
-      const totalDx = sx2 - sx1;
-      const totalDy = sy2 - sy1;
-      const totalDist = Math.sqrt(totalDx*totalDx + totalDy*totalDy);
-      if (totalDist < 0.001) return;
       G.shots.push({
-        x1: sx1, y1: sy1,
-        ndx: totalDx / totalDist,
-        ndy: totalDy / totalDist,
-        maxDist: totalDist,
-        dist: 0,
+        shooterId: s.shooterId,            // привязка начала
+        // запасные координаты на случай если стрелок исчез
+        fbStartX: s.startX,
+        fbStartY: s.startY,
+        hitId: s.hittedObjectId,           // -1 если промах
+        endRX: s.endXRelative,
+        endRY: s.endYRelative,
+        dist: 0,                            // пройденное расстояние от текущей стартовой
         rayLen: RAY_LEN,
+        born: now,
       });
     });
   }
-  // Удаляем лучи у которых хвост пересёк конечную точку
-  G.shots = G.shots.filter(s => (s.dist - s.rayLen) < s.maxDist);
+}
+
+// Текущий центр стрелка — или фоллбек на исторические startX/startY
+function shotStartPoint(s) {
+  if (s.shooterId !== undefined && s.shooterId !== null) {
+    const ent = findEntityById(s.shooterId);
+    if (ent) return { x: ent.x, y: ent.y };
+  }
+  return { x: s.fbStartX, y: s.fbStartY };
+}
+
+// ═══════════════════════════════════════════════════
+//  Вычисление мировой конечной точки луча в текущий момент
+//  Если есть hitId и объект жив → центр объекта + relative offset
+//  Иначе → absolute коорд из endRX/endRY
+// ═══════════════════════════════════════════════════
+function shotEndPoint(s) {
+  if (s.hitId !== undefined && s.hitId !== -1) {
+    const ent = findEntityById(s.hitId);
+    if (ent) {
+      return { x: ent.x + s.endRX, y: ent.y + s.endRY };
+    }
+    // объект исчез — фиксируем последнюю известную позицию (промах-фоллбек)
+  }
+  return { x: s.endRX, y: s.endRY };
 }
 
 // ═══════════════════════════════════════════════════
@@ -520,16 +566,17 @@ function frame(now) {
     G.fpsCount = 0; G.fpsTimer = now;
   }
 
-  // 1. Interpolate other players FIRST (needed for collision)
-  let others = G.othersB;
-  if (G.tA > 0 && G.tB > G.tA) {
+  // 1. Интерполяция других
+  let others;
+  if (G.tA > 0 && G.tB > G.tA && G.othersA.size > 0) {
     const t = Math.min(2, 1 + (now - G.tB) / (G.tB - G.tA));
     others = lerpOthers(G.othersA, G.othersB, t);
+  } else {
+    others = Array.from(G.othersB.values()).map(p => ({ ...p }));
   }
   G.interpOthers = others;
 
   if (G.ready) {
-    // 2. Compute input velocity
     let dx = 0, dy = 0;
     if (G.keys['KeyW']  || G.keys['ArrowUp'])    dy += 1;
     if (G.keys['KeyS']  || G.keys['ArrowDown'])  dy -= 1;
@@ -543,12 +590,10 @@ function frame(now) {
       vy = (dy/len) * PLAYER_SPEED * dt;
     }
 
-    // 3. Apply prediction
     const prevX = G.px, prevY = G.py;
     G.px += vx;
     G.py += vy;
 
-    // 4. Client-side collision against other players (SAT)
     if ((vx !== 0 || vy !== 0) && G.polyOff.length >= 6) {
       const myPoly = polyFromOffsets(G.px, G.py, G.polyOff);
       let blocked = false;
@@ -560,7 +605,6 @@ function frame(now) {
         }
       }
       if (blocked) {
-        // Try sliding along each axis independently
         const pxOnly = polyFromOffsets(prevX + vx, prevY, G.polyOff);
         let xOk = true;
         for (const o of others) {
@@ -580,7 +624,6 @@ function frame(now) {
       }
     }
 
-    // 5. Smooth correction — drain error buffer over frames
     const drain = Math.min(1, dt * CORR_RATE);
     const cx2 = G.corrX * drain;
     const cy2 = G.corrY * drain;
@@ -591,7 +634,6 @@ function frame(now) {
     if (Math.abs(G.corrX) < CORR_DEAD) G.corrX = 0;
     if (Math.abs(G.corrY) < CORR_DEAD) G.corrY = 0;
 
-    // 6. Client speed display
     const elapsed = now - G.lastSpeedT;
     if (elapsed >= 100) {
       const spd = Math.sqrt((G.px - G.lastPx)**2 + (G.py - G.lastPy)**2) / (elapsed/1000);
@@ -602,15 +644,25 @@ function frame(now) {
 
     $('h-pos').textContent = G.px.toFixed(1)+' / '+G.py.toFixed(1);
 
-    // 7. Camera smoothing
     const k = Math.min(1, dt * 18);
     G.camX += (G.px - G.camX) * k;
     G.camY += (G.py - G.camY) * k;
   }
 
-  // Move shots
+  // ── Продвигаем выстрелы и удаляем «отстрелявшиеся» ──
   G.shots.forEach(s => { s.dist += RAY_SPEED * dt; });
-  G.shots = G.shots.filter(s => (s.dist - s.rayLen) < s.maxDist);
+  G.shots = G.shots.filter(s => {
+    const sp = shotStartPoint(s);
+    const ep = shotEndPoint(s);
+    const dx = ep.x - sp.x, dy = ep.y - sp.y;
+    s._sx = sp.x; s._sy = sp.y;
+    s._maxDist = Math.sqrt(dx*dx + dy*dy);
+    s._ndx = s._maxDist > 0.0001 ? dx / s._maxDist : 0;
+    s._ndy = s._maxDist > 0.0001 ? dy / s._maxDist : 0;
+    s._ex = ep.x; s._ey = ep.y;
+    // убиваем когда хвост вышел за конечную точку
+    return (s.dist - s.rayLen) < s._maxDist;
+  });
 
   // ── DRAW ──
   const W = G.W, H = G.H;
@@ -622,9 +674,9 @@ function frame(now) {
 
   drawGrid(cx, cy, W, H);
   drawOrigin(cx, cy);
-  others.forEach(p => drawPlayer(p.x, p.y, p.poly,  p.name, false, cx, cy));
-  if (G.ready)         drawPlayer(G.px, G.py, G.polyOff, G.nick,  true,  cx, cy);
-  drawShots(cx, cy, now);
+  others.forEach(p => drawPlayer(p.x, p.y, p.poly, p.name, p.id, false, cx, cy));
+  if (G.ready) drawPlayer(G.px, G.py, G.polyOff, G.nick, G.myId, true, cx, cy);
+  drawShots(cx, cy);
   updatePList(others);
 }
 
@@ -635,6 +687,7 @@ const C = {
   grid:'#0f1820', gbig:'#142030',
   me:'#00e5ff',   meb:'#007aaa',
   ot:'#ff3c5f',   otb:'#aa1a30',
+  hit:'#ff5588',
   txt:'#c8d8e8',
 };
 
@@ -655,48 +708,65 @@ function drawOrigin(cx, cy) {
   seg(cx-8,cy,cx+8,cy); seg(cx,cy-8,cx,cy+8);
 }
 
-// Летящий луч-снаряд
+// Рисуем летящий луч. Если попал в живой объект — конец «прибит» к нему,
+// и луч естественно тянется/укорачивается с его движением.
 function drawShots(cx, cy) {
   G.shots.forEach(s => {
-    const frontDist = Math.min(s.dist, s.maxDist);
+    const maxDist  = s._maxDist || 0;
+    const frontDist = Math.min(s.dist, maxDist);
     const tailDist  = Math.max(0, s.dist - s.rayLen);
 
-    const fx = s.x1 + s.ndx * frontDist;
-    const fy = s.y1 + s.ndy * frontDist;
-    const tx = s.x1 + s.ndx * tailDist;
-    const ty = s.y1 + s.ndy * tailDist;
+    const fx = s._sx + s._ndx * frontDist;
+    const fy = s._sy + s._ndy * frontDist;
+    const tx = s._sx + s._ndx * tailDist;
+    const ty = s._sy + s._ndy * tailDist;
 
     const sfx = cx + fx * SCALE, sfy = cy - fy * SCALE;
     const stx = cx + tx * SCALE, sty = cy - ty * SCALE;
 
-    // Затухание: 1.0 пока наконечник не достиг конца, затем гаснет по мере прохождения хвоста
-    const overDist = s.dist - s.maxDist;   // < 0 — ещё не достиг; > 0 — хвост уходит за конец
+    const overDist = s.dist - maxDist;
     const fade = overDist <= 0 ? 1.0 : Math.max(0, 1 - overDist / s.rayLen);
 
-    // Свечение (широкий полупрозрачный ореол)
+    const isHit = s.hitId !== undefined && s.hitId !== -1;
+
+    // Свечение
     const grd = ctx.createLinearGradient(stx, sty, sfx, sfy);
     grd.addColorStop(0, `rgba(255,220,50,0)`);
     grd.addColorStop(0.4, `rgba(255,200,80,${0.18 * fade})`);
-    grd.addColorStop(1,   `rgba(255,255,160,${0.45 * fade})`);
+    grd.addColorStop(1,   isHit
+      ? `rgba(255,120,150,${0.55 * fade})`
+      : `rgba(255,255,160,${0.45 * fade})`);
     ctx.beginPath(); ctx.moveTo(stx,sty); ctx.lineTo(sfx,sfy);
     ctx.strokeStyle = grd; ctx.lineWidth = 5; ctx.stroke();
 
     // Основной луч
     const grd2 = ctx.createLinearGradient(stx, sty, sfx, sfy);
     grd2.addColorStop(0, `rgba(255,180,30,0)`);
-    grd2.addColorStop(1, `rgba(255,240,120,${fade})`);
+    grd2.addColorStop(1, isHit
+      ? `rgba(255,180,210,${fade})`
+      : `rgba(255,240,120,${fade})`);
     ctx.beginPath(); ctx.moveTo(stx,sty); ctx.lineTo(sfx,sfy);
     ctx.strokeStyle = grd2; ctx.lineWidth = 1.8; ctx.stroke();
 
-    // Яркая точка на наконечнике (пока он не перешёл конец)
+    // Наконечник
     if (overDist <= 0) {
       ctx.beginPath(); ctx.arc(sfx, sfy, 2.2, 0, pi2);
-      ctx.fillStyle = `rgba(255,255,200,0.9)`; ctx.fill();
+      ctx.fillStyle = isHit ? `rgba(255,200,220,0.95)` : `rgba(255,255,200,0.9)`;
+      ctx.fill();
+    }
+
+    // Если попал — рисуем «искру» в точке удара (статичной относительно объекта)
+    if (isHit && overDist <= 0) {
+      const ex = cx + s._ex * SCALE, ey = cy - s._ey * SCALE;
+      ctx.beginPath(); ctx.arc(ex, ey, 3.5, 0, pi2);
+      ctx.fillStyle = `rgba(255,80,120,${0.6 * fade})`; ctx.fill();
+      ctx.strokeStyle = `rgba(255,150,180,${0.9 * fade})`;
+      ctx.lineWidth = 1; ctx.stroke();
     }
   });
 }
 
-function drawPlayer(wx, wy, polyOff, name, isMe, cx, cy) {
+function drawPlayer(wx, wy, polyOff, name, id, isMe, cx, cy) {
   const px = cx + wx*SCALE;
   const py = cy - wy*SCALE;
   const fill = isMe ? C.me  : C.ot;
@@ -723,10 +793,17 @@ function drawPlayer(wx, wy, polyOff, name, isMe, cx, cy) {
     ctx.strokeStyle=fill+'35'; ctx.lineWidth=1; ctx.stroke();
   }
 
+  // Ник + id
   ctx.font=(isMe?'700':'400')+' 11px Share Tech Mono';
   ctx.fillStyle=isMe?C.me:C.txt;
   ctx.textAlign='center';
   ctx.fillText((isMe?'▶ ':'')+name, px, py-15);
+
+  if (id !== undefined && id !== null) {
+    ctx.font='400 9px Share Tech Mono';
+    ctx.fillStyle = C.txt + '88';
+    ctx.fillText('#'+id, px, py-26);
+  }
 }
 
 function seg(x1,y1,x2,y2) {
@@ -739,11 +816,13 @@ function seg(x1,y1,x2,y2) {
 function updatePList(others) {
   const b = $('plb'); b.innerHTML = '';
   const all = [];
-  if (G.ready) all.push({name:G.nick, x:G.px, y:G.py, me:true});
-  others.forEach(p => all.push({name:p.name, x:p.x, y:p.y, me:false}));
+  if (G.ready) all.push({id:G.myId, name:G.nick, x:G.px, y:G.py, me:true});
+  others.forEach(p => all.push({id:p.id, name:p.name, x:p.x, y:p.y, me:false}));
   all.forEach(p => {
     const d = document.createElement('div'); d.className='pe';
+    const idStr = (p.id !== undefined && p.id !== null) ? `<span class="pid">#${p.id}</span>` : '';
     d.innerHTML = `<div class="${p.me?'pdm':'pdo'}"></div>`
+      + idStr
       + `<span class="pn">${p.name}</span>`
       + `<span class="pp">${Math.round(p.x)},${Math.round(p.y)}</span>`;
     b.appendChild(d);
