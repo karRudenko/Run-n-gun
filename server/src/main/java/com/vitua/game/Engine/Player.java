@@ -1,17 +1,30 @@
 package com.vitua.game.Engine;
 
 
+import java.util.ArrayList;
+import java.util.List;
+
 import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
 import com.vitua.game.Engine.Collisions.Collision;
 import com.vitua.game.Engine.Weapons.Weapon;
 import com.vitua.game.EventSystem.EventManager;
+import com.vitua.game.EventSystem.EventType;
+import com.vitua.game.EventSystem.KillEvent;
 import com.vitua.game.Engine.Weapons.DebugGun;
+import com.vitua.game.Engine.Weapons.ShotRecord;
 import com.vitua.game.math.Vector2D;
+
+import javafx.scene.shape.Polygon;
 
 public class Player extends GameObject{
     InputRecord playerInput=InputRecord.emptyInputRecord();
     Weapon weapon=null;
+    double headShotDistance=0.3;
+    double health;
+    double maxHealth=100;
+    double timeToRevive=0;
+
 
     public void injectInput(InputRecord input){
         playerInput=input;
@@ -19,6 +32,7 @@ public class Player extends GameObject{
     public Player(Collision collision, EventManager eventManager){
         super(collision,eventManager);
         weapon=new DebugGun(this,eventManager);
+        
     }
 
     public Player(Vector2D pos, Collision col){
@@ -28,52 +42,95 @@ public class Player extends GameObject{
         super(col);
     }
     public PlayerData gPlayerData(){
-        return new PlayerData(name, pos.getM_x(), pos.getM_y(), collision.getCollision());
+        return new PlayerData(name, id, pos.getM_x(), pos.getM_y(), rotation ,vel.getM_x(),vel.getM_y(), collision.getOrygRotated());
     }
     public MyPlayerData gMyPlayerData(){
-        return  new MyPlayerData(name, pos.getM_x(), pos.getM_y(), collision.getCollision());
+        return  new MyPlayerData(name, id, pos.getM_x(), pos.getM_y(), rotation, vel.getM_x(),vel.getM_y(),weapon.gWeaponData(),
+         collision.getOrygRotated(),health, timeToRevive);
     }
+
     @Override
     public void update(long nanoDeltaTime){
         if(!active) return;
+        weapon.update(nanoDeltaTime);
         double deltaTimeSec=nanoDeltaTime/1e9;
-
         handleInput(deltaTimeSec);
         translate(Vector2D.vecScal(vel, deltaTimeSec));
         
     }
+    public void reviveIn(double timeMiliSec){
+        timeToRevive=timeMiliSec;
+    }
+    public void lowerReviveTime(double timeMiliSec){
+        timeToRevive-=timeMiliSec;
+    }
+    public boolean isAlive(){
+        return timeToRevive<0;
+    }
+    
     private void handleInput(double deltaTimeSec){
         handleMovement(deltaTimeSec);
     }
     
     private void handleMovement(double deltaTimeSec){
-        double friction=0.99;
-        vel=Vector2D.addVectors(vel, Vector2D.vecScal(Vector2D.negativeVector2d(vel),friction*deltaTimeSec));
-
+        vel=new Vector2D(0, 0);
+        setRotation(Math.toDegrees(Math.atan2(playerInput.mousePosY(), playerInput.mousePosX())));
         if(playerInput.forwardHolded()){
-            velAddition(forward(), deltaTimeSec);
+            velAddition(new Vector2D(0,1), deltaTimeSec);
         }
         if(playerInput.rightHolded()){
-            velAddition(right(), deltaTimeSec);
+            velAddition(new Vector2D(1,0), deltaTimeSec);
         }
         if(playerInput.leftHolded()){
-            velAddition(left(), deltaTimeSec);
+            velAddition(new Vector2D(-1,0), deltaTimeSec);
         }
         if(playerInput.backHolded()){
-            velAddition(back(), deltaTimeSec);
+            velAddition(new Vector2D(0,-1), deltaTimeSec);
+        }
+        if(playerInput.leftMouseHolded()){
+            shoot();
         }
 
     }
     private void velAddition(Vector2D dir, double deltaTimeSec){
-        double maxSpeed=10;
-        double acceleration=0.8;
-        vel.addVector(Vector2D.vecScal(dir, acceleration));
-        if(vel.length()>maxSpeed){
+        double maxSpeed=6;
+        double acceleration=100000000;
+        vel.addVector(Vector2D.vecScal(dir, maxSpeed));
+        if(vel.length()<0.1){
+            vel=new Vector2D(0, 0);
+        }
+        else{
             vel=Vector2D.vecScal(Vector2D.normalaze(vel), maxSpeed);
         }
+
     }
     public void shoot(){
         weapon.shoot();
+    }
+    @Override
+    public void handleHit(ShotRecord record){
+        Vector2D hitPoint = record.shot().hitPoint();
+        Vector2D relative = Vector2D.addVectors(Vector2D.negativeVector2d(hitPoint), pos);
+        if(relative.length()>headShotDistance){
+            takeDamage(record, record.weapon().gDamage());
+        }
+        else{
+            takeDamage(record ,record.weapon().gHeadshotDamage());
+        }
+    }
+    public void revive(){
+        health = maxHealth;
+    }
+    public void takeDamage(ShotRecord record, double damage){
+        health -= damage;
+        if(health<=0){
+            die(record);
+        }
+    }
+    public void die(ShotRecord record){
+        if(record.owner() instanceof Player killer){
+            eventManager.sendEventDirect(EventType.KILL_EVENT, new KillEvent(weapon,   killer, this));
+        }
     }
 
 }

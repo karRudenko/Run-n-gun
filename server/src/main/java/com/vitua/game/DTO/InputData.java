@@ -1,9 +1,9 @@
-package com.vitua.game.DTO;
+    package com.vitua.game.DTO;
 
-import com.vitua.game.Engine.InputRecord;
+    import com.vitua.game.Engine.InputRecord;
 
-public record InputData(
-    String nickName,
-    InputRecord data
-) {
-}
+    public record InputData(
+        String nickName,
+        InputRecord data
+    ) {
+    }

@@ -5,12 +5,14 @@ public record InputRecord(
     boolean rightHolded,
     boolean leftHolded,
     boolean backHolded,
-    double mouseposX,
+    boolean leftMouseHolded,
+    boolean rightMouseHolded,
+    double mousePosX,
     double mousePosY
 
 
 ) {
     public static InputRecord emptyInputRecord(){
-        return new InputRecord(false,false,false,false,0,0);
+        return new InputRecord(false, false, false, false, false, false, 0.0, 0.0);
     }
 } 

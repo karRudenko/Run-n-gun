@@ -40,6 +40,16 @@ public class Collision {
         updateGlobalCords();
 
     }
+    public List<Double> getOrygRotated(){
+        List<Double> global = collision.getPoints();
+        int pairCount = global.size() / 2;          
+        List<Double> res = new ArrayList<>(pairCount * 2);
+        for (int i = 0; i < pairCount * 2; i += 2) {
+            res.add(global.get(i)     - pos.getM_x());
+            res.add(global.get(i + 1) - pos.getM_y());
+        }
+        return res;
+    }
     private void updateGlobalCords(){
 
         double rad=Math.toRadians(rot);

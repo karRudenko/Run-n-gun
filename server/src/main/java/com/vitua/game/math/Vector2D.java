@@ -30,9 +30,16 @@ public class Vector2D{
         return Math.sqrt(m_x*m_x+m_y*m_y);
     }
     public void normalize(){
-        double l=length();
-        m_x/=l;
-        m_y/=l;
+        double l = length();
+
+        if (l < 1e-8) {
+            m_x = 0;
+            m_y = 0;
+            return;
+        }
+
+        m_x /= l;
+        m_y /= l;
     }
     public Vector2D copy(){
         return new Vector2D(m_x, m_y);

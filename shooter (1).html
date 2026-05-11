@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHOOTER</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@700&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#090b0f;--surf:#0d1117;--brd:#1e2d40;
+  --acc:#00e5ff;--red:#ff3c5f;--grn:#39ff14;--org:#ff9f1c;
+  --txt:#c8d8e8;--mut:#4a6070;
+  --mono:'Share Tech Mono',monospace;
+  --ui:'Rajdhani',sans-serif;
+}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--txt);font-family:var(--ui)}
+.screen{display:none;width:100%;height:100%;position:absolute;inset:0}
+.screen.active{display:flex}
+
+/* ── REGISTER ── */
+#sr{flex-direction:column;align-items:center;justify-content:center;background:var(--bg);overflow:hidden}
+#sr::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:.22;
+  background:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--brd) 39px,var(--brd) 40px),
+             repeating-linear-gradient(90deg,transparent,transparent 39px,var(--brd) 39px,var(--brd) 40px)}
+.rbox{position:relative;z-index:1;width:360px;background:var(--surf);border:1px solid var(--brd);border-top:2px solid var(--acc);padding:36px 30px 30px}
+.logo{font-family:var(--ui);font-weight:700;font-size:38px;letter-spacing:9px;color:var(--acc);text-align:center;margin-bottom:2px}
+.logo-s{font-family:var(--mono);font-size:11px;color:var(--mut);text-align:center;letter-spacing:4px;margin-bottom:30px}
+.fl{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:2px;text-transform:uppercase;display:block;margin-bottom:6px}
+.fi{width:100%;background:var(--bg);border:1px solid var(--brd);border-bottom:1px solid var(--acc);color:var(--acc);font-family:var(--mono);font-size:17px;padding:8px 10px;outline:none}
+.fi:focus{box-shadow:0 0 0 1px var(--acc)}
+.jbtn{width:100%;margin-top:24px;padding:12px;background:transparent;border:1px solid var(--acc);color:var(--acc);font-family:var(--ui);font-weight:700;font-size:13px;letter-spacing:4px;text-transform:uppercase;cursor:pointer;transition:background .14s,color .14s}
+.jbtn:hover{background:var(--acc);color:var(--bg)}
+.jbtn:disabled{opacity:.4;cursor:not-allowed}
+.st{font-family:var(--mono);font-size:12px;margin-top:10px;text-align:center;min-height:16px}
+.st.e{color:var(--red)}.st.ok{color:var(--grn)}
+
+/* ── GAME ── */
+#sg{flex-direction:column}
+.hud{height:40px;min-height:40px;background:var(--surf);border-bottom:1px solid var(--brd);
+     display:flex;align-items:center;padding:0 12px;gap:0;flex-shrink:0;overflow:hidden}
+.hdot{width:6px;height:6px;border-radius:50%;background:var(--grn);animation:bl 1.2s infinite;flex-shrink:0;margin-right:10px}
+@keyframes bl{0%,100%{opacity:1}50%{opacity:.1}}
+.hnick{font-family:var(--mono);font-size:12px;color:var(--acc);white-space:nowrap;margin-right:16px}
+.hnick em{color:var(--mut);font-style:normal;font-size:10px;margin-right:3px}
+.hdbg{display:flex;gap:14px;margin-left:auto;align-items:center}
+.hd-item{display:flex;flex-direction:column;align-items:flex-end}
+.hd-label{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:1px;line-height:1}
+.hd-val{font-family:var(--mono);font-size:12px;line-height:1.2}
+.hd-val.acc{color:var(--acc)}.hd-val.grn{color:var(--grn)}.hd-val.red{color:var(--red)}.hd-val.org{color:var(--org)}
+.hd-sep{width:1px;height:24px;background:var(--brd);flex-shrink:0}
+
+.gwrap{flex:1;position:relative;overflow:hidden;cursor:crosshair}
+#cv{display:block;position:absolute;inset:0}
+
+/* ── WEAPON PANEL (bottom-left) ── */
+.wpanel{
+  position:absolute;bottom:14px;left:14px;
+  background:rgba(9,11,15,.88);
+  border:1px solid var(--brd);border-left:2px solid var(--org);
+  padding:10px 14px 10px 12px;
+  pointer-events:none;min-width:180px;
+}
+.wp-name{font-family:var(--ui);font-weight:700;font-size:15px;letter-spacing:3px;color:var(--org);margin-bottom:6px}
+.wp-ammo-row{display:flex;align-items:baseline;gap:6px;margin-bottom:8px}
+.wp-ammo-cur{font-family:var(--mono);font-size:22px;color:var(--txt)}
+.wp-ammo-sep{font-family:var(--mono);font-size:13px;color:var(--mut)}
+.wp-ammo-max{font-family:var(--mono);font-size:13px;color:var(--mut)}
+.wp-ammo-cur.low{color:var(--red);animation:ammofl .4s infinite alternate}
+@keyframes ammofl{from{opacity:1}to{opacity:.4}}
+.wp-reload{font-family:var(--mono);font-size:10px;color:var(--red);letter-spacing:2px;margin-bottom:6px;height:13px}
+.wp-label{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:4px}
+/* ammo pips */
+.wp-pips{display:flex;gap:3px;flex-wrap:wrap;max-width:160px}
+.pip{width:7px;height:3px;background:var(--org);border-radius:1px;transition:background .1s}
+.pip.empty{background:var(--mut)}
+/* recoil bar */
+.wp-recoil-track{width:100%;height:4px;background:var(--brd);border-radius:2px;margin-top:6px;position:relative;overflow:hidden}
+.wp-recoil-fill{height:100%;border-radius:2px;transition:width .12s linear;background:linear-gradient(90deg,var(--grn),var(--org),var(--red))}
+.wp-recoil-label{display:flex;justify-content:space-between;margin-top:3px}
+.wp-recoil-text{font-family:var(--mono);font-size:9px;color:var(--mut)}
+.wp-recoil-val{font-family:var(--mono);font-size:9px}
+
+.plist{position:absolute;top:8px;right:8px;width:170px;background:rgba(13,17,23,.92);
+       border:1px solid var(--brd);border-top:1px solid var(--acc);padding:8px 10px;pointer-events:none}
+.pt{font-family:var(--mono);font-size:9px;color:var(--mut);letter-spacing:2px;margin-bottom:6px}
+.pe{display:flex;align-items:center;gap:5px;padding:2px 0;font-family:var(--mono);font-size:11px;border-bottom:1px solid rgba(30,45,64,.4)}
+.pe:last-child{border-bottom:none}
+.pdm{width:6px;height:6px;border-radius:50%;background:var(--acc);flex-shrink:0}
+.pdo{width:6px;height:6px;border-radius:50%;background:var(--red);flex-shrink:0}
+.pn{color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pp{color:var(--mut);font-size:9px}
+
+#ov{position:absolute;inset:0;background:var(--bg);display:flex;flex-direction:column;
+    align-items:center;justify-content:center;gap:16px;z-index:50;transition:opacity .35s}
+#ov.gone{opacity:0;pointer-events:none}
+.spin{width:36px;height:36px;border:2px solid var(--brd);border-top-color:var(--acc);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.ovt{font-family:var(--mono);font-size:11px;color:var(--mut);letter-spacing:2px}
+
+.kf{position:absolute;bottom:8px;left:8px;display:flex;flex-direction:column;gap:3px;pointer-events:none}
+.km{font-family:var(--mono);font-size:11px;color:var(--mut);background:rgba(13,17,23,.75);
+    padding:1px 7px;opacity:0;animation:kfi 3s ease forwards}
+@keyframes kfi{0%{opacity:0;transform:translateX(-5px)}10%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+</style>
+</head>
+<body>
+
+<div class="screen active" id="sr">
+  <div class="rbox">
+    <div class="logo">SHOOTER</div>
+    <div class="logo-s">// ONLINE ARENA</div>
+    <label class="fl" for="nick">CALLSIGN</label>
+    <input class="fi" id="nick" type="text" maxlength="24" placeholder="enter nickname" autocomplete="off" spellcheck="false">
+    <button class="jbtn" id="bjoin">[ JOIN SERVER ]</button>
+    <div class="st" id="st"></div>
+  </div>
+</div>
+
+<div class="screen" id="sg">
+  <div class="hud">
+    <div class="hdot"></div>
+    <div class="hnick"><em>PLAYER//</em><span id="hnick">—</span></div>
+    <div class="hdbg">
+      <div class="hd-item">
+        <span class="hd-label">POSITION</span>
+        <span class="hd-val acc" id="h-pos">—</span>
+      </div>
+      <div class="hd-sep"></div>
+      <div class="hd-item">
+        <span class="hd-label">SPD CLIENT</span>
+        <span class="hd-val grn" id="h-spd-c">0.00</span>
+      </div>
+      <div class="hd-sep"></div>
+      <div class="hd-item">
+        <span class="hd-label">SPD SERVER</span>
+        <span class="hd-val red" id="h-spd-s">0.00</span>
+      </div>
+      <div class="hd-sep"></div>
+      <div class="hd-item">
+        <span class="hd-label">FPS</span>
+        <span class="hd-val grn" id="h-fps">—</span>
+      </div>
+      <div class="hd-sep"></div>
+      <div class="hd-item">
+        <span class="hd-label">RTT</span>
+        <span class="hd-val acc" id="h-rtt">— ms</span>
+      </div>
+    </div>
+  </div>
+  <div class="gwrap" id="gwrap">
+    <canvas id="cv"></canvas>
+
+    <!-- Weapon panel -->
+    <div class="wpanel" id="wpanel">
+      <div class="wp-name" id="wp-name">—</div>
+      <div class="wp-ammo-row">
+        <span class="wp-ammo-cur" id="wp-ammo-cur">—</span>
+        <span class="wp-ammo-sep">/</span>
+        <span class="wp-ammo-max" id="wp-ammo-max">—</span>
+      </div>
+      <div class="wp-reload" id="wp-reload"></div>
+      <div class="wp-label">ROUNDS</div>
+      <div class="wp-pips" id="wp-pips"></div>
+      <div class="wp-recoil-track"><div class="wp-recoil-fill" id="wp-recoil-fill" style="width:0%"></div></div>
+      <div class="wp-recoil-label">
+        <span class="wp-recoil-text">RECOIL</span>
+        <span class="wp-recoil-val" id="wp-recoil-val" style="color:#39ff14">0°</span>
+      </div>
+    </div>
+
+    <div class="plist"><div class="pt">// ONLINE</div><div id="plb"></div></div>
+    <div class="kf" id="kf"></div>
+    <div id="ov"><div class="spin"></div><div class="ovt">CONNECTING...</div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ═══════════════════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════════════════
+const API          = 'http://localhost:8080/game';
+const TICK_MS      = 50;
+const SCALE        = 40;
+const RAY_LEN      = 0.55;  // длина летящего луча в игровых единицах
+const RAY_SPEED    = 28;    // скорость луча ед/сек
+const PLAYER_SPEED = 10;
+const SNAP_DIST    = 4;
+const CORR_RATE    = 10;
+const CORR_DEAD    = 0.005;
+
+// ═══════════════════════════════════════════════════
+//  STATE
+// ═══════════════════════════════════════════════════
+const G = {
+  nick: '',
+  ready: false,
+  px: 0, py: 0,
+  corrX: 0, corrY: 0,
+  polyOff: [],
+  weapon: null,
+
+  lastPx: 0, lastPy: 0, lastSpeedT: 0,
+
+  tickSentAt: 0,
+  rtt: 0,
+
+  othersA: [], othersB: [],
+  tA: 0, tB: 0,
+  interpOthers: [],
+
+  shots: [],
+
+  keys: {},
+  mX: 0, mY: 0,
+  mL: false, mR: false,
+
+  camX: 0, camY: 0,
+  W: 0, H: 0,
+  prevFrame: 0,
+  fpsCount: 0, fpsTimer: 0,
+};
+
+// ═══════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════
+const $   = id => document.getElementById(id);
+const pi2 = Math.PI * 2;
+
+function showScr(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  $(id).classList.add('active');
+}
+function setSt(msg, cls) {
+  const e = $('st'); e.textContent = msg; e.className = 'st '+(cls||'');
+}
+
+function lerpOthers(a, b, t) {
+  return b.map(pb => {
+    const pa = a.find(p => p.name === pb.name);
+    if (!pa) return pb;
+    return { name: pb.name, x: pa.x+(pb.x-pa.x)*t, y: pa.y+(pb.y-pa.y)*t, poly: pb.poly };
+  });
+}
+
+// ═══════════════════════════════════════════════════
+//  SAT COLLISION (polygon vs polygon)
+// ═══════════════════════════════════════════════════
+function polyFromOffsets(cx, cy, offs) {
+  const v = [];
+  for (let i = 0; i < offs.length; i += 2) v.push({ x: cx + offs[i], y: cy + offs[i+1] });
+  return v;
+}
+
+function satOverlap(a, b) {
+  if (a.length < 3 || b.length < 3) return false;
+  return _satAxes(a, b) && _satAxes(b, a);
+}
+
+function _satAxes(src, other) {
+  for (let i = 0; i < src.length; i++) {
+    const j = (i + 1) % src.length;
+    const nx = -(src[j].y - src[i].y);
+    const ny =  (src[j].x - src[i].x);
+    let minA =  Infinity, maxA = -Infinity;
+    let minB =  Infinity, maxB = -Infinity;
+    for (const v of src)   { const d = v.x*nx + v.y*ny; if (d < minA) minA = d; if (d > maxA) maxA = d; }
+    for (const v of other) { const d = v.x*nx + v.y*ny; if (d < minB) minB = d; if (d > maxB) maxB = d; }
+    if (maxA <= minB || maxB <= minA) return false;
+  }
+  return true;
+}
+
+// ═══════════════════════════════════════════════════
+//  WEAPON HUD
+// ═══════════════════════════════════════════════════
+// Отдача: recoil — половина угла разброса (от сервера, в градусах или радианах?)
+// Предполагаем gradусы. Нормируем по диапазону 0–45° для цветового индикатора.
+const MAX_RECOIL_DEG = 45;
+
+function updateWeaponHUD(w) {
+  if (!w) return;
+  $('wp-name').textContent = w.name || '—';
+
+  const cur = w.ammo ?? 0;
+  const max = w.maxAmmo ?? 0;
+  const curEl = $('wp-ammo-cur');
+  curEl.textContent = cur;
+  curEl.className = 'wp-ammo-cur' + (cur <= Math.ceil(max * 0.25) && cur > 0 ? ' low' : '');
+  $('wp-ammo-max').textContent = max;
+
+  $('wp-reload').textContent = w.isRealoading ? '⟳ RELOADING...' : '';
+
+  // Pips (max 30 отображаем)
+  const pipsEl = $('wp-pips');
+  const show = Math.min(max, 30);
+  if (pipsEl.children.length !== show) {
+    pipsEl.innerHTML = '';
+    for (let i = 0; i < show; i++) {
+      const p = document.createElement('div'); p.className = 'pip'; pipsEl.appendChild(p);
+    }
+  }
+  const ratio = max > 0 ? cur / max : 0;
+  const filled = Math.round(ratio * show);
+  Array.from(pipsEl.children).forEach((p, i) => {
+    p.className = 'pip' + (i < filled ? '' : ' empty');
+  });
+
+  // Recoil bar — recoil это половина угла разброса в градусах
+  const recoilDeg = w.recoil ?? 0;
+  const pct = Math.min(100, (recoilDeg / MAX_RECOIL_DEG) * 100);
+  $('wp-recoil-fill').style.width = pct + '%';
+  const rv = $('wp-recoil-val');
+  rv.textContent = recoilDeg.toFixed(1) + '°';
+  if (pct < 30)      rv.style.color = '#39ff14';
+  else if (pct < 65) rv.style.color = '#ff9f1c';
+  else               rv.style.color = '#ff3c5f';
+}
+
+// ═══════════════════════════════════════════════════
+//  REGISTER
+// ═══════════════════════════════════════════════════
+$('bjoin').addEventListener('click', doReg);
+$('nick').addEventListener('keydown', e => { if (e.key==='Enter') doReg(); });
+
+function doReg() {
+  const nick = $('nick').value.trim();
+  if (!nick) return setSt('enter a callsign','e');
+  $('bjoin').disabled = true;
+  setSt('connecting...','');
+  fetch(API+'/register', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({name: nick}),
+  })
+  .then(r => r.json())
+  .then(ok => {
+    if (ok) { G.nick = nick; setSt('ACCESS GRANTED','ok'); setTimeout(startGame, 500); }
+    else    { setSt('nickname taken or error','e'); $('bjoin').disabled = false; }
+  })
+  .catch(e => { setSt('unreachable — '+e.message,'e'); $('bjoin').disabled = false; });
+}
+
+// ═══════════════════════════════════════════════════
+//  GAME START
+// ═══════════════════════════════════════════════════
+let canvas, ctx;
+
+function startGame() {
+  $('hnick').textContent = G.nick;
+  showScr('sg');
+  canvas = $('cv');
+  ctx    = canvas.getContext('2d');
+  resize();
+  window.addEventListener('resize', resize);
+  bindInput();
+  const now = performance.now();
+  G.prevFrame  = now;
+  G.fpsTimer   = now;
+  G.lastSpeedT = now;
+  G.lastPx     = 0;
+  G.lastPy     = 0;
+  setInterval(tick, TICK_MS);
+  requestAnimationFrame(frame);
+  setTimeout(() => $('ov').classList.add('gone'), 1500);
+}
+
+function resize() {
+  const w = $('gwrap');
+  canvas.width  = G.W = w.clientWidth;
+  canvas.height = G.H = w.clientHeight;
+}
+
+// ═══════════════════════════════════════════════════
+//  INPUT
+// ═══════════════════════════════════════════════════
+function bindInput() {
+  document.addEventListener('keydown', e => { G.keys[e.code] = true;  });
+  document.addEventListener('keyup',   e => { G.keys[e.code] = false; });
+  const w = $('gwrap');
+  w.addEventListener('mousemove', e => {
+    const r = canvas.getBoundingClientRect();
+    G.mX = e.clientX - r.left;
+    G.mY = e.clientY - r.top;
+  });
+  w.addEventListener('mousedown',   e => { if(e.button===0) G.mL=true;  if(e.button===2) G.mR=true;  });
+  w.addEventListener('mouseup',     e => { if(e.button===0) G.mL=false; if(e.button===2) G.mR=false; });
+  w.addEventListener('contextmenu', e => e.preventDefault());
+  w.addEventListener('mouseleave',  () => { G.mL=false; G.mR=false; });
+}
+
+// ═══════════════════════════════════════════════════
+//  SERVER TICK
+// ═══════════════════════════════════════════════════
+function tick() {
+  G.tickSentAt = performance.now();
+  fetch(API+'/all', {
+    method: 'POST',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({
+      nickName: G.nick,
+      data: {
+        forwardHolded:    !!(G.keys['KeyW']    || G.keys['ArrowUp']),
+        rightHolded:      !!(G.keys['KeyD']    || G.keys['ArrowRight']),
+        leftHolded:       !!(G.keys['KeyA']    || G.keys['ArrowLeft']),
+        backHolded:       !!(G.keys['KeyS']    || G.keys['ArrowDown']),
+        leftMouseHolded:  !!G.mL,
+        rightMouseHolded: !!G.mR,
+        mousePosX:  G.ready ?  (G.mX - G.W/2) / SCALE : 0,
+        mousePosY:  G.ready ? -((G.mY - G.H/2) / SCALE) : 0,
+      }
+    }),
+  })
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { if (d) onServer(d); })
+  .catch(() => {});
+}
+
+// ═══════════════════════════════════════════════════
+//  PROCESS SERVER RESPONSE
+// ═══════════════════════════════════════════════════
+function onServer(data) {
+  $('ov').classList.add('gone');
+  const now = performance.now();
+
+  if (G.tickSentAt > 0) {
+    G.rtt = Math.round(now - G.tickSentAt);
+    $('h-rtt').textContent = G.rtt + ' ms';
+  }
+
+  if (data.myPlayer) {
+    const sp = data.myPlayer;
+
+    const srvSpeed = Math.sqrt((sp.xSpeed||0)**2 + (sp.ySpeed||0)**2);
+    $('h-spd-s').textContent = srvSpeed.toFixed(2);
+
+    // Weapon state
+    if (sp.weapon) {
+      G.weapon = sp.weapon;
+      updateWeaponHUD(G.weapon);
+    }
+
+    if (!G.ready) {
+      G.px = sp.x; G.py = sp.y;
+      G.camX = sp.x; G.camY = sp.y;
+      G.lastPx = sp.x; G.lastPy = sp.y;
+      G.lastSpeedT = performance.now();
+      G.corrX = 0; G.corrY = 0;
+      G.ready = true;
+    } else {
+      const errX = sp.x - G.px;
+      const errY = sp.y - G.py;
+      const errD = Math.sqrt(errX*errX + errY*errY);
+      if (errD > SNAP_DIST) {
+        G.px = sp.x; G.py = sp.y;
+        G.corrX = 0; G.corrY = 0;
+      } else if (errD > CORR_DEAD) {
+        G.corrX = errX;
+        G.corrY = errY;
+      }
+    }
+    G.polyOff = sp.polygons || [];
+  }
+
+  const prevNames = G.othersB.map(p => p.name);
+  G.othersA = G.othersB;
+  G.tA      = G.tB;
+  G.othersB = (data.players || []).map(p => ({
+    name: p.name,
+    x:    p.x,
+    y:    p.y,
+    poly: p.polygons || [],
+  }));
+  G.tB = now;
+
+  G.othersB.forEach(p => { if (!prevNames.includes(p.name)) killfeed(p.name+' joined'); });
+
+  // ── Выстрелы: создаём летящий луч ──
+  if (data.shot && data.shot.length) {
+    data.shot.forEach(s => {
+      let ox = 0, oy = 0;
+      if (s.shooterName === G.nick && data.myPlayer) {
+        ox = G.px - data.myPlayer.x;
+        oy = G.py - data.myPlayer.y;
+      }
+      const sx1 = s.startX + ox, sy1 = s.startY + oy;
+      const sx2 = s.endX   + ox, sy2 = s.endY   + oy;
+      const totalDx = sx2 - sx1;
+      const totalDy = sy2 - sy1;
+      const totalDist = Math.sqrt(totalDx*totalDx + totalDy*totalDy);
+      if (totalDist < 0.001) return;
+      G.shots.push({
+        x1: sx1, y1: sy1,
+        ndx: totalDx / totalDist,
+        ndy: totalDy / totalDist,
+        maxDist: totalDist,
+        dist: 0,
+        rayLen: RAY_LEN,
+      });
+    });
+  }
+  // Удаляем лучи у которых хвост пересёк конечную точку
+  G.shots = G.shots.filter(s => (s.dist - s.rayLen) < s.maxDist);
+}
+
+// ═══════════════════════════════════════════════════
+//  RENDER LOOP
+// ═══════════════════════════════════════════════════
+function frame(now) {
+  requestAnimationFrame(frame);
+
+  const dt = Math.min((now - G.prevFrame) / 1000, 0.08);
+  G.prevFrame = now;
+
+  G.fpsCount++;
+  if (now - G.fpsTimer >= 1000) {
+    $('h-fps').textContent = G.fpsCount;
+    G.fpsCount = 0; G.fpsTimer = now;
+  }
+
+  // 1. Interpolate other players FIRST (needed for collision)
+  let others = G.othersB;
+  if (G.tA > 0 && G.tB > G.tA) {
+    const t = Math.min(2, 1 + (now - G.tB) / (G.tB - G.tA));
+    others = lerpOthers(G.othersA, G.othersB, t);
+  }
+  G.interpOthers = others;
+
+  if (G.ready) {
+    // 2. Compute input velocity
+    let dx = 0, dy = 0;
+    if (G.keys['KeyW']  || G.keys['ArrowUp'])    dy += 1;
+    if (G.keys['KeyS']  || G.keys['ArrowDown'])  dy -= 1;
+    if (G.keys['KeyD']  || G.keys['ArrowRight']) dx += 1;
+    if (G.keys['KeyA']  || G.keys['ArrowLeft'])  dx -= 1;
+
+    let vx = 0, vy = 0;
+    if (dx !== 0 || dy !== 0) {
+      const len = Math.sqrt(dx*dx + dy*dy);
+      vx = (dx/len) * PLAYER_SPEED * dt;
+      vy = (dy/len) * PLAYER_SPEED * dt;
+    }
+
+    // 3. Apply prediction
+    const prevX = G.px, prevY = G.py;
+    G.px += vx;
+    G.py += vy;
+
+    // 4. Client-side collision against other players (SAT)
+    if ((vx !== 0 || vy !== 0) && G.polyOff.length >= 6) {
+      const myPoly = polyFromOffsets(G.px, G.py, G.polyOff);
+      let blocked = false;
+      for (const o of others) {
+        if (o.poly && o.poly.length >= 6) {
+          if (satOverlap(myPoly, polyFromOffsets(o.x, o.y, o.poly))) {
+            blocked = true; break;
+          }
+        }
+      }
+      if (blocked) {
+        // Try sliding along each axis independently
+        const pxOnly = polyFromOffsets(prevX + vx, prevY, G.polyOff);
+        let xOk = true;
+        for (const o of others) {
+          if (o.poly && o.poly.length >= 6 && satOverlap(pxOnly, polyFromOffsets(o.x, o.y, o.poly))) {
+            xOk = false; break;
+          }
+        }
+        const pyOnly = polyFromOffsets(prevX, prevY + vy, G.polyOff);
+        let yOk = true;
+        for (const o of others) {
+          if (o.poly && o.poly.length >= 6 && satOverlap(pyOnly, polyFromOffsets(o.x, o.y, o.poly))) {
+            yOk = false; break;
+          }
+        }
+        G.px = xOk ? prevX + vx : prevX;
+        G.py = yOk ? prevY + vy : prevY;
+      }
+    }
+
+    // 5. Smooth correction — drain error buffer over frames
+    const drain = Math.min(1, dt * CORR_RATE);
+    const cx2 = G.corrX * drain;
+    const cy2 = G.corrY * drain;
+    G.px += cx2;
+    G.py += cy2;
+    G.corrX -= cx2;
+    G.corrY -= cy2;
+    if (Math.abs(G.corrX) < CORR_DEAD) G.corrX = 0;
+    if (Math.abs(G.corrY) < CORR_DEAD) G.corrY = 0;
+
+    // 6. Client speed display
+    const elapsed = now - G.lastSpeedT;
+    if (elapsed >= 100) {
+      const spd = Math.sqrt((G.px - G.lastPx)**2 + (G.py - G.lastPy)**2) / (elapsed/1000);
+      $('h-spd-c').textContent = spd.toFixed(2);
+      G.lastPx = G.px; G.lastPy = G.py;
+      G.lastSpeedT = now;
+    }
+
+    $('h-pos').textContent = G.px.toFixed(1)+' / '+G.py.toFixed(1);
+
+    // 7. Camera smoothing
+    const k = Math.min(1, dt * 18);
+    G.camX += (G.px - G.camX) * k;
+    G.camY += (G.py - G.camY) * k;
+  }
+
+  // Move shots
+  G.shots.forEach(s => { s.dist += RAY_SPEED * dt; });
+  G.shots = G.shots.filter(s => (s.dist - s.rayLen) < s.maxDist);
+
+  // ── DRAW ──
+  const W = G.W, H = G.H;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#090b0f'; ctx.fillRect(0, 0, W, H);
+
+  const cx = W/2 - G.camX * SCALE;
+  const cy = H/2 + G.camY * SCALE;
+
+  drawGrid(cx, cy, W, H);
+  drawOrigin(cx, cy);
+  others.forEach(p => drawPlayer(p.x, p.y, p.poly,  p.name, false, cx, cy));
+  if (G.ready)         drawPlayer(G.px, G.py, G.polyOff, G.nick,  true,  cx, cy);
+  drawShots(cx, cy, now);
+  updatePList(others);
+}
+
+// ═══════════════════════════════════════════════════
+//  DRAW
+// ═══════════════════════════════════════════════════
+const C = {
+  grid:'#0f1820', gbig:'#142030',
+  me:'#00e5ff',   meb:'#007aaa',
+  ot:'#ff3c5f',   otb:'#aa1a30',
+  txt:'#c8d8e8',
+};
+
+function drawGrid(cx, cy, W, H) {
+  const s = SCALE, s5 = s*5;
+  ctx.lineWidth = 0.5; ctx.strokeStyle = C.grid;
+  const ox=((cx%s)+s)%s, oy=((cy%s)+s)%s;
+  for (let x=ox; x<W; x+=s) seg(x,0,x,H);
+  for (let y=oy; y<H; y+=s) seg(0,y,W,y);
+  ctx.lineWidth = 0.8; ctx.strokeStyle = C.gbig;
+  const ox5=((cx%s5)+s5)%s5, oy5=((cy%s5)+s5)%s5;
+  for (let x=ox5; x<W; x+=s5) seg(x,0,x,H);
+  for (let y=oy5; y<H; y+=s5) seg(0,y,W,y);
+}
+
+function drawOrigin(cx, cy) {
+  ctx.strokeStyle='#1e2d40'; ctx.lineWidth=1;
+  seg(cx-8,cy,cx+8,cy); seg(cx,cy-8,cx,cy+8);
+}
+
+// Летящий луч-снаряд
+function drawShots(cx, cy) {
+  G.shots.forEach(s => {
+    const frontDist = Math.min(s.dist, s.maxDist);
+    const tailDist  = Math.max(0, s.dist - s.rayLen);
+
+    const fx = s.x1 + s.ndx * frontDist;
+    const fy = s.y1 + s.ndy * frontDist;
+    const tx = s.x1 + s.ndx * tailDist;
+    const ty = s.y1 + s.ndy * tailDist;
+
+    const sfx = cx + fx * SCALE, sfy = cy - fy * SCALE;
+    const stx = cx + tx * SCALE, sty = cy - ty * SCALE;
+
+    // Затухание: 1.0 пока наконечник не достиг конца, затем гаснет по мере прохождения хвоста
+    const overDist = s.dist - s.maxDist;   // < 0 — ещё не достиг; > 0 — хвост уходит за конец
+    const fade = overDist <= 0 ? 1.0 : Math.max(0, 1 - overDist / s.rayLen);
+
+    // Свечение (широкий полупрозрачный ореол)
+    const grd = ctx.createLinearGradient(stx, sty, sfx, sfy);
+    grd.addColorStop(0, `rgba(255,220,50,0)`);
+    grd.addColorStop(0.4, `rgba(255,200,80,${0.18 * fade})`);
+    grd.addColorStop(1,   `rgba(255,255,160,${0.45 * fade})`);
+    ctx.beginPath(); ctx.moveTo(stx,sty); ctx.lineTo(sfx,sfy);
+    ctx.strokeStyle = grd; ctx.lineWidth = 5; ctx.stroke();
+
+    // Основной луч
+    const grd2 = ctx.createLinearGradient(stx, sty, sfx, sfy);
+    grd2.addColorStop(0, `rgba(255,180,30,0)`);
+    grd2.addColorStop(1, `rgba(255,240,120,${fade})`);
+    ctx.beginPath(); ctx.moveTo(stx,sty); ctx.lineTo(sfx,sfy);
+    ctx.strokeStyle = grd2; ctx.lineWidth = 1.8; ctx.stroke();
+
+    // Яркая точка на наконечнике (пока он не перешёл конец)
+    if (overDist <= 0) {
+      ctx.beginPath(); ctx.arc(sfx, sfy, 2.2, 0, pi2);
+      ctx.fillStyle = `rgba(255,255,200,0.9)`; ctx.fill();
+    }
+  });
+}
+
+function drawPlayer(wx, wy, polyOff, name, isMe, cx, cy) {
+  const px = cx + wx*SCALE;
+  const py = cy - wy*SCALE;
+  const fill = isMe ? C.me  : C.ot;
+  const brd  = isMe ? C.meb : C.otb;
+
+  if (polyOff && polyOff.length >= 6) {
+    ctx.beginPath();
+    for (let i=0; i<polyOff.length; i+=2) {
+      const vx = px + polyOff[i]   * SCALE;
+      const vy = py - polyOff[i+1] * SCALE;
+      i===0 ? ctx.moveTo(vx,vy) : ctx.lineTo(vx,vy);
+    }
+    ctx.closePath();
+    ctx.fillStyle=fill+'2a'; ctx.fill();
+    ctx.strokeStyle=fill; ctx.lineWidth=isMe?1.5:1; ctx.stroke();
+  }
+
+  ctx.beginPath(); ctx.arc(px,py,isMe?5:4,0,pi2);
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.strokeStyle=brd; ctx.lineWidth=1.5; ctx.stroke();
+
+  if (isMe) {
+    ctx.beginPath(); ctx.arc(px,py,13,0,pi2);
+    ctx.strokeStyle=fill+'35'; ctx.lineWidth=1; ctx.stroke();
+  }
+
+  ctx.font=(isMe?'700':'400')+' 11px Share Tech Mono';
+  ctx.fillStyle=isMe?C.me:C.txt;
+  ctx.textAlign='center';
+  ctx.fillText((isMe?'▶ ':'')+name, px, py-15);
+}
+
+function seg(x1,y1,x2,y2) {
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+}
+
+// ═══════════════════════════════════════════════════
+//  UI
+// ═══════════════════════════════════════════════════
+function updatePList(others) {
+  const b = $('plb'); b.innerHTML = '';
+  const all = [];
+  if (G.ready) all.push({name:G.nick, x:G.px, y:G.py, me:true});
+  others.forEach(p => all.push({name:p.name, x:p.x, y:p.y, me:false}));
+  all.forEach(p => {
+    const d = document.createElement('div'); d.className='pe';
+    d.innerHTML = `<div class="${p.me?'pdm':'pdo'}"></div>`
+      + `<span class="pn">${p.name}</span>`
+      + `<span class="pp">${Math.round(p.x)},${Math.round(p.y)}</span>`;
+    b.appendChild(d);
+  });
+}
+
+function killfeed(msg) {
+  const e = document.createElement('div');
+  e.className='km'; e.textContent=msg;
+  $('kf').appendChild(e);
+  setTimeout(() => e.remove(), 3200);
+}
+</script>
+</body>
+</html>
