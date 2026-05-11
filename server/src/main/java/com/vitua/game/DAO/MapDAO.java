@@ -40,7 +40,7 @@ public class MapDAO {
     private CollisionManager collisionManager = new CollisionManager();
     private boolean running = true;
     private final EventManager eventHandler;
-    private HashSet<String> hashSet=new HashSet<>();
+    private HashSet<String> nicks=new HashSet<>();
 
     private HashMap<String, ArrayList<ShotDTO>> shots = new HashMap<>();
 
@@ -75,14 +75,20 @@ public class MapDAO {
         return CompletableFuture.completedFuture("game finished");
     }
     public GameResponceDTO getAllPlayers(String name) {
-        if(!hashSet.contains(name)) return null;
+
+        if(!nicks.contains(name)) return null;
+
+
+        
         Player myPlayer=map.getPlayer(name);
         List<PlayerData> playerList = new ArrayList<>();
         MyPlayerData myPlayerData = myPlayer.gMyPlayerData();
-
-        for ( Player obj: map.getVisiblePlayers(myPlayer.getId())) {
-            if(!obj.getName().equals(name))
-            playerList.add(obj.gPlayerData());
+        var visibleOthers = map.getVisiblePlayers(myPlayer.getId());
+        if(visibleOthers != null){
+            for ( Player obj: visibleOthers) {
+                if(!obj.getName().equals(name))
+                playerList.add(obj.gPlayerData());
+            }
         }
         List<WallDTO> walls = new ArrayList<>();
         for(GameObject o : map.getIdObject().values()){
@@ -109,7 +115,7 @@ public class MapDAO {
         map.injectInput(nickname, data);
     }
     public boolean addPlayer(String name){
-        hashSet.add(name);
+        nicks.add(name);
         shots.put(name, new ArrayList<>());
         return map.addPlayer(name);
     }
@@ -143,6 +149,8 @@ public class MapDAO {
 
         }
     }
-    
+    public List<String> getAllNicks(){
+        return new ArrayList<>(nicks);
+    }
         
 }

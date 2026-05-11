@@ -48,9 +48,8 @@ public class DebugGun extends Weapon {
         
         coolDown= 1/fireRate*1000;
 
-        double recoil = curRecoil();
-        lastRecoil=recoil;
-        double angle = getRandomAngle(recoil);
+
+        double angle = getRandomAngle(lastRecoil);
 
         
         Vector2D ownerDirection=owner.forward();

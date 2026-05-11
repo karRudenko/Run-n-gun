@@ -35,7 +35,7 @@ public abstract class Weapon {
     }
     public void update(long nanoSecDelta){
         double miliSec=nanoSecDelta/1e6;
-
+        lastShotTime+=miliSec;
         if (coolDown > 0) {
                 coolDown -= miliSec;
         }
@@ -49,7 +49,11 @@ public abstract class Weapon {
                     reloadTimer = 0;
                 }
         }
-        lastShotTime+=miliSec;
+        
+        double recoil = calculateRecoile(miliSec);
+        lastRecoil=recoil;
+
+       
         
     }
     public abstract void shoot();
@@ -65,21 +69,24 @@ public abstract class Weapon {
         isRealoading=false;
     }
 
+    public void setAmmo(int ammo){
+        this.ammo = Math.max(ammo, maxAmmo);
+    }
 
-    public double calculateRecoile(double time){
+    public double calculateRecoile(double timeMiliSec){
         double targetRecoil=0;
-        if(time<recoilStaticTime){
+        if(lastShotTime<recoilStaticTime){
             targetRecoil+=recoilStatic;
         }
         if(owner.getVelocity().length()>0){
             targetRecoil+=recoilDynamic;
         }
         
-        if(time>interpolTime){
+        if(timeMiliSec>interpolTime){
             return targetRecoil;
         }
         
-        double res=lastRecoil+time*(targetRecoil-lastRecoil)/interpolTime;
+        double res=lastRecoil+timeMiliSec*(targetRecoil-lastRecoil)/interpolTime;
         return res;    
     }
     public double curRecoil(){
@@ -90,7 +97,7 @@ public abstract class Weapon {
 
     }
     public WeaponData gWeaponData(){
-        return new WeaponData(getMyType(),ammo, maxAmmo, curRecoil(), isRealoading);
+        return new WeaponData(getMyType(),ammo, maxAmmo, lastRecoil, isRealoading);
     }
     public abstract String getMyType();
     public double gHeadshotDamage(){
