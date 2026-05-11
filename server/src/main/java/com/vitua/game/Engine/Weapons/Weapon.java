@@ -44,7 +44,7 @@ public abstract class Weapon {
                 reloadTimer -= miliSec;
                 
                 if (reloadTimer <= 0) {
-                    ammo = maxAmmo;
+                    refillAmmo();
                     isRealoading = false;
                     reloadTimer = 0;
                 }
@@ -65,12 +65,19 @@ public abstract class Weapon {
     public boolean isReadyToShoot(){
         return !isRealoading && coolDown<=0;
     }
+    
     public void enable(){
+        if(owner.getVelocity().length()>0){
+            lastRecoil=recoilDynamic;
+        }
+    }
+    public void disable(){
         isRealoading=false;
+
     }
 
-    public void setAmmo(int ammo){
-        this.ammo = Math.max(ammo, maxAmmo);
+    public void refillAmmo(){
+        this.ammo = maxAmmo;
     }
 
     public double calculateRecoile(double timeMiliSec){

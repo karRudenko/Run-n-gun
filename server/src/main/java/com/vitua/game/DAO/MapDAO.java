@@ -75,7 +75,7 @@ public class MapDAO {
         return CompletableFuture.completedFuture("game finished");
     }
     public GameResponceDTO getAllPlayers(String name) {
-
+        
         if(!nicks.contains(name)) return null;
 
 
@@ -114,7 +114,7 @@ public class MapDAO {
     public void injectInput(String nickname, InputRecord data){
         map.injectInput(nickname, data);
     }
-    public boolean addPlayer(String name){
+    public boolean addPlayer(String name){  
         nicks.add(name);
         shots.put(name, new ArrayList<>());
         return map.addPlayer(name);

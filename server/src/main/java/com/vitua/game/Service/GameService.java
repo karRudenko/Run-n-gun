@@ -32,12 +32,12 @@ public class GameService {
         var nicks = mapDAO.getAllNicks();
         if(nicks==null) return;
         for (String nick : nicks) {
-            GameResponceDTO dto = mapDAO.getAllPlayers(nick);
 
+                GameResponceDTO dto = mapDAO.getAllPlayers(nick);
+                template.convertAndSend("/return/data/" + nick, dto);
+            
 
-
-
-            template.convertAndSend("/return/data/" + nick, dto);
+            
         }
     }
 

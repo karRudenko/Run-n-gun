@@ -2,12 +2,14 @@ package com.vitua.game.Engine;
 
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
 import com.vitua.game.Engine.Collisions.Collision;
 import com.vitua.game.Engine.Weapons.Weapon;
+import com.vitua.game.Engine.Weapons.WeaponDispenser;
 import com.vitua.game.EventSystem.EventManager;
 import com.vitua.game.EventSystem.EventType;
 import com.vitua.game.EventSystem.KillEvent;
@@ -24,16 +26,19 @@ public class Player extends GameObject{
     double health;
     double maxHealth=100;
     double timeToRevive=0;
-
+    protected WeaponDispenser weaponDispenser=null;
 
     public void injectInput(InputRecord input){
         playerInput=input;
     }
     public Player(Collision collision, EventManager eventManager){
         super(collision,eventManager);
-        weapon=new DebugGun(this,eventManager);
+        weaponDispenser= new WeaponDispenser(new ArrayList<>(Arrays.asList(new DebugGun(this, eventManager),
+                                                            new DebugGun(this, eventManager))));
+       this.weapon=weaponDispenser.getWeapon(1);
         
     }
+
 
     public Player(Vector2D pos, Collision col){
         super(pos, col);
@@ -52,7 +57,7 @@ public class Player extends GameObject{
     @Override
     public void update(long nanoDeltaTime){
         if(!active) return;
-        weapon.update(nanoDeltaTime);
+        weaponDispenser.update(nanoDeltaTime);
         double deltaTimeSec=nanoDeltaTime/1e9;
         handleInput(deltaTimeSec);
         translate(Vector2D.vecScal(vel, deltaTimeSec));
@@ -91,6 +96,16 @@ public class Player extends GameObject{
             shoot();
         }
 
+        if(playerInput.reloadPressed()){
+            weapon.reload();
+        }
+
+        int numPressed = playerInput.getPressedDigit();
+
+        if(numPressed>=0){
+            this.weapon=weaponDispenser.getWeapon(numPressed);
+        }
+
     }
     private void velAddition(Vector2D dir, double deltaTimeSec){
         double maxSpeed=6;
@@ -120,6 +135,7 @@ public class Player extends GameObject{
     }
     public void revive(){
         health = maxHealth;
+        weaponDispenser.refillAmmo();
     }
     public void takeDamage(ShotRecord record, double damage){
         health -= damage;
