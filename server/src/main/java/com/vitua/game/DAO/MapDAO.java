@@ -61,16 +61,26 @@ public class MapDAO {
         catch(Exception e){
             System.out.println(e.getMessage());
         }
-    
+
+        long curtimeUpdate=Math.round(System.nanoTime()/1e6);
+        long lastUpdate=Math.round(System.nanoTime()/1e6);
 
         while (running && !Thread.currentThread().isInterrupted()) {
+
+            long timeToWait=Math.max(15-lastUpdate+curtimeUpdate,0);
+            
+
+            
             try {
-                Thread.sleep(15); 
+                Thread.sleep(timeToWait); 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return CompletableFuture.failedFuture(e);
+
             }
+            curtimeUpdate=Math.round(System.nanoTime()/1e6);
             map.update();
+            lastUpdate=Math.round(System.nanoTime()/1e6);
         }
         return CompletableFuture.completedFuture("game finished");
     }
@@ -132,6 +142,8 @@ public class MapDAO {
                     list.add(new ShotDTO(shot.ownerId,
                             res.startPoint().getM_x(),res.startPoint().getM_y(),
                             res.hitObject().getId(),
+                            res.hitPoint().getM_x(),
+                            res.hitPoint().getM_y(),
                             res.hitPoint().getM_x()-res.hitObject().getPos().getM_x(),
                             res.hitPoint().getM_y()-res.hitObject().getPos().getM_y()
                             ));
@@ -141,7 +153,9 @@ public class MapDAO {
                             res.startPoint().getM_x(),res.startPoint().getM_y(),
                             -1,
                             res.hitPoint().getM_x(),
-                            res.hitPoint().getM_y()
+                            res.hitPoint().getM_y(),
+                            0,
+                            0
                             ));                  
                 }
             }

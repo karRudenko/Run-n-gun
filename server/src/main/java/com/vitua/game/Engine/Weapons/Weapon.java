@@ -18,7 +18,7 @@ public abstract class Weapon {
     protected double lastShotTime;
 
     protected double reloadTime;
-    protected double reloadTimer;
+    protected double reloadTimer=0;
     protected boolean isRealoading=false;
 
     protected double recoilStatic;

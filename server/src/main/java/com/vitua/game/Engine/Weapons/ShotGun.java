@@ -6,28 +6,29 @@ import com.vitua.game.EventSystem.EventType;
 import com.vitua.game.EventSystem.ShotEvent;
 import com.vitua.game.math.Vector2D;
 
-public class DebugGun extends Weapon {
+public class ShotGun extends Weapon {
+    double recoilStandart=10;
+    double ammoInShot=5;
 
 
-
-    public DebugGun(GameObject owner, EventManager eventManager){
+    public ShotGun(GameObject owner, EventManager eventManager){
+        
         super(owner, eventManager);
 
         recoilStatic=5;
         recoilDynamic=10;
-        damage=10;
-        headShotDamage=40;
-        maxAmmo=30;
+        damage=20;
+        headShotDamage=30;
+        maxAmmo=7;
         ammo=maxAmmo;
 
-        coolDown=0;
-        fireRate=10.0;
+        fireRate=1.5;
 
         reloadTime=1000;
-        reloadTimer=0;
 
-        recoilDynamic=10;
-        recoilStatic=5;
+
+        recoilDynamic=0;
+        recoilStatic=0;
         recoilStaticTime=200;
         interpolTime=100;
         
@@ -49,21 +50,25 @@ public class DebugGun extends Weapon {
         coolDown= 1/fireRate*1000;
 
 
-        double angle = getRandomAngle(lastRecoil);
+        
 
         
-        Vector2D ownerDirection=owner.forward();
-        ownerDirection.rotate(angle);
+        
         Vector2D shotPos=owner.getPos();
 
-        eventManager.sendEventDirect(EventType.SHOT_EVENT,new ShotEvent(ownerDirection, shotPos, owner.getId(),this, 50));
+        for(int i=0;i<ammoInShot;i++){
+            Vector2D ownerDirection=owner.forward();
+            double angle = getRandomAngle(lastRecoil+recoilStandart);
+            ownerDirection.rotate(angle);
+            eventManager.sendEventDirect(EventType.SHOT_EVENT,new ShotEvent(ownerDirection, shotPos, owner.getId(),this, 50));
+        }
         lastShotTime=0;
     }
     
     @Override
     public String getMyType() {
 
-        return "DebugGun";
+        return "Shotgun";
     }
 
 

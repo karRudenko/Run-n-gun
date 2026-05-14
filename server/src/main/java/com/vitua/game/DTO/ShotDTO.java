@@ -5,6 +5,8 @@ public record ShotDTO(
     double startX,
     double startY,
     int hittedObjectId,
+    double endXHitted,
+    double endYHitted,
     double endXRelative,
     double endYRelative
 ) {

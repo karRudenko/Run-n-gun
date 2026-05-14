@@ -14,6 +14,7 @@ import com.vitua.game.EventSystem.EventManager;
 import com.vitua.game.EventSystem.EventType;
 import com.vitua.game.EventSystem.KillEvent;
 import com.vitua.game.Engine.Weapons.DebugGun;
+import com.vitua.game.Engine.Weapons.ShotGun;
 import com.vitua.game.Engine.Weapons.ShotRecord;
 import com.vitua.game.math.Vector2D;
 
@@ -34,7 +35,7 @@ public class Player extends GameObject{
     public Player(Collision collision, EventManager eventManager){
         super(collision,eventManager);
         weaponDispenser= new WeaponDispenser(new ArrayList<>(Arrays.asList(new DebugGun(this, eventManager),
-                                                            new DebugGun(this, eventManager))));
+                                                            new ShotGun(this, eventManager))));
        this.weapon=weaponDispenser.getWeapon(1);
         
     }
