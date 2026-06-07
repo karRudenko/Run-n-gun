@@ -59,6 +59,7 @@ public abstract class Weapon {
     public abstract void shoot();
 
     public void reload(){
+        if(isRealoading || ammo==maxAmmo) return;
         isRealoading=true;
         reloadTimer=reloadTime;
     }

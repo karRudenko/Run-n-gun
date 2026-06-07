@@ -3,7 +3,6 @@ package com.vitua.game.Engine;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
@@ -16,9 +15,9 @@ import com.vitua.game.EventSystem.KillEvent;
 import com.vitua.game.Engine.Weapons.DebugGun;
 import com.vitua.game.Engine.Weapons.ShotGun;
 import com.vitua.game.Engine.Weapons.ShotRecord;
+import com.vitua.game.Engine.Weapons.SniperRifle;
 import com.vitua.game.math.Vector2D;
 
-import javafx.scene.shape.Polygon;
 
 public class Player extends GameObject{
     InputRecord playerInput=InputRecord.emptyInputRecord();
@@ -27,6 +26,7 @@ public class Player extends GameObject{
     double health;
     double maxHealth=100;
     double timeToRevive=0;
+    boolean isDead =false;
     protected WeaponDispenser weaponDispenser=null;
 
     public void injectInput(InputRecord input){
@@ -35,7 +35,7 @@ public class Player extends GameObject{
     public Player(Collision collision, EventManager eventManager){
         super(collision,eventManager);
         weaponDispenser= new WeaponDispenser(new ArrayList<>(Arrays.asList(new DebugGun(this, eventManager),
-                                                            new ShotGun(this, eventManager))));
+                                                            new ShotGun(this, eventManager),new SniperRifle(this, eventManager))));
        this.weapon=weaponDispenser.getWeapon(1);
         
     }
@@ -137,6 +137,7 @@ public class Player extends GameObject{
     public void revive(){
         health = maxHealth;
         weaponDispenser.refillAmmo();
+        isDead=false;
     }
     public void takeDamage(ShotRecord record, double damage){
         health -= damage;
@@ -145,9 +146,11 @@ public class Player extends GameObject{
         }
     }
     public void die(ShotRecord record){
+        if(isDead) return;
         if(record.owner() instanceof Player killer){
             eventManager.sendEventDirect(EventType.KILL_EVENT, new KillEvent(weapon,   killer, this));
         }
+        isDead=true;
     }
 
 }

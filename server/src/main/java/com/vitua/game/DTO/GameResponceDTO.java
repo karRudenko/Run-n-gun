@@ -8,7 +8,8 @@ public record GameResponceDTO(
     List<PlayerData> players,
     List<ShotDTO> shot,
     long serverTime,
-    List<WallDTO> walls
+    List<WallDTO> walls,
+    MapDTO mapDTO
 
 
 

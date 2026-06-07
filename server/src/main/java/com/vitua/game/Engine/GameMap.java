@@ -2,24 +2,24 @@
 
     import java.util.Map;
     import java.util.Queue;
-    import java.util.HashMap;
+
     import java.util.HashSet;
     import java.util.LinkedList;
     import java.util.Stack;
-    import java.util.stream.Collector;
+
     import java.util.stream.Collectors;
     import java.util.List;
-    import java.util.AbstractMap;
-    import java.util.AbstractSet;
+
     import java.util.ArrayList;
     import java.util.Arrays;
     import java.util.Collection;
-    import org.springframework.stereotype.Component;
-import org.yaml.snakeyaml.events.Event.ID;
+import java.util.Collections;
 
-import java.util.AbstractMap;
+import org.springframework.stereotype.Component;
 
-    import com.vitua.game.Engine.Collisions.Collision;
+
+import com.vitua.game.DTO.MapDTO;
+import com.vitua.game.Engine.Collisions.Collision;
     import com.vitua.game.Engine.Collisions.CollisionManager;
     import com.vitua.game.Engine.Collisions.RaycastResult;
     import com.vitua.game.Engine.Weapons.ShotRecord;
@@ -30,7 +30,7 @@ import java.util.AbstractMap;
     import com.vitua.game.EventSystem.ShotEvent;
     import com.vitua.game.math.Vector2D;
 
-    import javafx.util.Pair;
+
 
     import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,6 +50,7 @@ import java.util.AbstractMap;
         protected EventManager eventManager;
         protected double timeToRespawn=4000;
         protected List<Player> deadPlayers=new ArrayList<>();
+        protected MapRecords mapRecords;
         
         public GameMap(EventManager eventManager){
             this.eventManager=eventManager;
@@ -61,7 +62,9 @@ import java.util.AbstractMap;
             ids.add(0); 
             spawnPoints = new ArrayList<>();
             nameInput = new ConcurrentHashMap<>();
-            spawnPoints=getBaseSpawnPoints();
+            mapRecords=new MapRecords(eventManager);
+
+
             
             eventManager.subscribe(EventType.KILL_EVENT, e -> handleEvent(e));
 
@@ -83,16 +86,18 @@ import java.util.AbstractMap;
             nameId.put(nickName, id);
             idObject.put(id, player);
             spawnQueue.add(player);
+            mapRecords.addPlayer(id);
             return true;
         }
         protected boolean spawnPlayer(Player player){
+            Collections.shuffle(spawnPoints);
             Vector2D pos = null;
-            Collision areaOfSpawn = new Collision(Collision.getRecCollision(1, 1));
-            Collection<GameObject> objects=getActivGameObjects();
+            Collision areaOfSpawn = new Collision(Collision.getRecCollision(7, 7));
+            Collection<Player> objects=getActivePlayers();
             for(Vector2D v : spawnPoints){
                 pos=v;
                 areaOfSpawn.setPos(pos);
-                for(GameObject o : objects){
+                for(Player o : objects){
                     if(collisionManager.checkCollisionOfObjects(areaOfSpawn,o)){
                         pos=null;
                         break;
@@ -183,7 +188,9 @@ import java.util.AbstractMap;
         public List<Player> getActivePlayers(){
             return  getActivGameObjects().parallelStream().filter( o-> nameId.containsValue(o.getId())).map(o -> (Player)o).collect(Collectors.toList());
         }
-        
+        public List<Player> getPlayers(){
+            return  idObject.values().parallelStream().filter( o-> nameId.containsValue(o.getId())).map(o -> (Player)o).collect(Collectors.toList());
+        }
         public void handleEvent(Event event){
             if(event instanceof KillEvent kill){
                 kill.killed.disable();
@@ -268,4 +275,8 @@ import java.util.AbstractMap;
         public  List<Player> getVisiblePlayers(int id) {
             return visiblePlayers.get(id);
         }
+        public MapDTO getMapDTO(){
+            return mapRecords.gMapDTO(getPlayers());
+        }
+
     }

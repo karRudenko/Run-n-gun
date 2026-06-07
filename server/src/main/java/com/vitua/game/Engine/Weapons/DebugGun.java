@@ -63,7 +63,7 @@ public class DebugGun extends Weapon {
     @Override
     public String getMyType() {
 
-        return "DebugGun";
+        return "Rifle";
     }
 
 

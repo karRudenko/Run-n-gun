@@ -10,7 +10,7 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-
+import java.util.Scanner;
 import com.vitua.game.DTO.GameResponceDTO;
 import com.vitua.game.DTO.MyPlayerData;
 import com.vitua.game.DTO.PlayerData;
@@ -31,6 +31,9 @@ import com.vitua.game.EventSystem.Event;
 import com.vitua.game.Engine.GameMap;
 import java.util.stream.Collectors;
 import com.vitua.game.math.Vector2D;
+
+import jakarta.annotation.PreDestroy;
+
 import com.vitua.game.EventSystem.EventManager;
 import java.util.HashSet;
 
@@ -49,11 +52,9 @@ public class MapDAO {
         this.eventHandler=eventHandler;
         
     }
-
     @EventListener(ApplicationReadyEvent.class)
     @Async
     public CompletableFuture<String> startGame() {
-
         eventHandler.subscribe(EventType.SHOT_EVENT, (e)->handleEvents(e));
         try{
             map.readObjects(MapData.fromResource("/mirage.json"));
@@ -84,6 +85,37 @@ public class MapDAO {
         }
         return CompletableFuture.completedFuture("game finished");
     }
+
+
+    @EventListener(ApplicationReadyEvent.class)
+    @Async
+    public void listenToConsoleInput() {
+        
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (running && !Thread.currentThread().isInterrupted()) {
+                if (scanner.hasNextLine()) {
+                    String command = scanner.nextLine().trim();
+                    
+                    if (command.isEmpty()) continue;
+
+                    switch (command.toLowerCase()) {
+                        case "stop":
+                            this.running = false;
+                            break;
+                            
+                        case "status":
+                            System.out.println("Players: " + nicks.size());
+                            System.out.println("Nicks: " + getAllNicks());
+                            break;
+                            
+                        default:
+                            break;
+                    }
+                }
+            }
+        } catch (Exception e) {
+        }
+    }
     public GameResponceDTO getAllPlayers(String name) {
         
         if(!nicks.contains(name)) return null;
@@ -100,6 +132,9 @@ public class MapDAO {
                 playerList.add(obj.gPlayerData());
             }
         }
+
+
+
         List<WallDTO> walls = new ArrayList<>();
         for(GameObject o : map.getIdObject().values()){
             if(o instanceof Wall wall){
@@ -114,7 +149,8 @@ public class MapDAO {
             playerList,
             new ArrayList<>(playerShots),
             System.nanoTime() / 1_000_000,
-            walls
+            walls,
+            map.getMapDTO()
         );
 
         playerShots.clear();
