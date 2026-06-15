@@ -138,7 +138,7 @@ public class MapDAO {
         List<WallDTO> walls = new ArrayList<>();
         for(GameObject o : map.getIdObject().values()){
             if(o instanceof Wall wall){
-                walls.addLast(wall.gWallDTO());
+                walls.add(wall.gWallDTO());
             }
         }
         ArrayList<ShotDTO> playerShots =

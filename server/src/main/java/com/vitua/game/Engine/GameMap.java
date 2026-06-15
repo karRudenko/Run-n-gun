@@ -149,7 +149,7 @@ import com.vitua.game.Engine.Collisions.Collision;
             }
 
             List<GameObject> activeObjects=getActivGameObjects();
-            while(!spawnQueue.isEmpty()){
+            if(!spawnQueue.isEmpty()){
                 spawnPlayer(spawnQueue.poll());
             }
 

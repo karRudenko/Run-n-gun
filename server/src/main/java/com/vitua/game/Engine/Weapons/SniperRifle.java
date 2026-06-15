@@ -22,7 +22,7 @@ public class SniperRifle extends Weapon {
         ammo=maxAmmo;
 
         coolDown=0;
-        fireRate=0.4;
+        fireRate=0.7;
 
         reloadTime=4000;
         reloadTimer=0;
